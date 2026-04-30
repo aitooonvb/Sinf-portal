@@ -3,48 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>授業管理・カレンダー</title>
+    <title>大学生活管理システム</title>
     <style>
         :root {
-            --primary: #4a90e2;
-            --present: #28a745;
-            --absent: #dc3545;
-            --late: #ffc107;
-            --warning: #f39c12;
-            --danger: #e74c3c;
+            --primary: #4a90e2; --present: #28a745; --absent: #dc3545; --late: #ffc107; --danger: #e74c3c;
         }
         body { font-family: -apple-system, sans-serif; background-color: #f0f2f5; padding: 15px; color: #333; margin: 0; }
         .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
-        /* 警告テロップ */
         #alertTelop { display: none; background: var(--danger); color: white; padding: 10px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 15px; animation: blink 1s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
-        .counter-box { background: #fff3f3; border: 2px solid var(--absent); padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center; }
-        .counter-num { font-size: 1.5rem; font-weight: bold; color: var(--absent); }
+        /* 統計エリア */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: #f8f9fa; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #eee; }
+        .stat-val { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        .stat-absent { color: var(--absent); }
 
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; }
-        select, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem; }
-        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        select, button, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem; box-sizing: border-box; }
+        textarea { font-family: inherit; resize: vertical; height: 60px; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
 
         .radio-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
         .radio-card { border: 1px solid #ddd; padding: 8px 2px; border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.8rem; }
         input[type="radio"] { display: none; }
         input[type="radio"]:checked + .radio-card { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* カレンダー表示 */
-        .calendar-section { margin-top: 25px; border-top: 2px solid #eee; padding-top: 15px; }
+        /* カレンダー */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
-        .calendar-day { aspect-ratio: 1; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; border-radius: 4px; cursor: pointer; position: relative; }
+        .calendar-day { aspect-ratio: 1; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; border-radius: 4px; cursor: pointer; }
         .calendar-day.has-data { background: #e3f2fd; border-color: var(--primary); font-weight: bold; }
-        .calendar-day:hover { background: #bbdefb; }
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; }
 
-        #dayDetail { margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px; font-size: 0.85rem; }
-        .log-entry { border-left: 4px solid var(--primary); padding-left: 8px; margin-bottom: 8px; }
-        .status-出席 { border-color: var(--present); }
-        .status-欠席 { border-color: var(--absent); }
+        #dayDetail { margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 8px; font-size: 0.85rem; border: 1px solid #ddd; }
+        .log-entry { border-left: 4px solid var(--primary); padding-left: 8px; margin-bottom: 12px; background: white; padding: 8px; border-radius: 0 4px 4px 0; }
+        .memo-text { font-size: 0.8rem; color: #666; font-style: italic; margin-top: 4px; border-top: 1px dashed #eee; padding-top: 4px; }
+        .status-出席 { border-color: var(--present); } .status-欠席 { border-color: var(--absent); }
     </style>
 </head>
 <body>
@@ -52,18 +47,25 @@
 <div class="container">
     <div id="alertTelop">⚠️ 単位の危機！欠席可能回数が残りわずかです ⚠️</div>
 
-    <div class="counter-box">
-        <div style="font-size: 0.8rem;" id="subjectLabel">科目を選択してください</div>
-        <div class="counter-num">残り <span id="remainCount">5</span> 回</div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div style="font-size: 0.7rem;">総取得予定単位</div>
+            <div class="stat-val"><span id="totalCredits">0</span></div>
+        </div>
+        <div class="stat-card" style="border-color: var(--absent);">
+            <div style="font-size: 0.7rem;" id="subjectLabel">残り欠席可能</div>
+            <div class="stat-val stat-absent"><span id="remainCount">5</span>回</div>
+        </div>
     </div>
 
     <div class="form-group">
         <label>授業を選択</label>
         <select id="subjectSelect" onchange="updateUI()">
-            <option value="データサイエンス基礎,山田太郎,101教室">データサイエンス基礎</option>
-            <option value="線形代数,佐藤花子,203教室">線形代数</option>
-            <option value="情報IT概論,鈴木一郎,305教室">情報IT概論</option>
-            <option value="気象学,田中次郎,401教室">気象学</option>
+            <!-- 単位数(credit)も値に含める -->
+            <option value="データサイエンス基礎,山田太郎,101教室,2">データサイエンス基礎 (2単位)</option>
+            <option value="線形代数,佐藤花子,203教室,2">線形代数 (2単位)</option>
+            <option value="情報IT概論,鈴木一郎,305教室,2">情報IT概論 (2単位)</option>
+            <option value="気象学,田中次郎,401教室,2">気象学 (2単位)</option>
         </select>
     </div>
 
@@ -77,67 +79,79 @@
         </div>
     </div>
 
-    <button onclick="save()">記録する</button>
+    <div class="form-group">
+        <label>メモ（課題内容や欠席理由など）</label>
+        <textarea id="memoInput" placeholder="例: レポート締切 5/10、体調不良のため欠席 など"></textarea>
+    </div>
 
-    <div class="calendar-section">
-        <div class="calendar-header">
+    <button onclick="save()">記録を保存する</button>
+
+    <div class="calendar-section" style="margin-top:20px; border-top:2px solid #eee; padding-top:15px;">
+        <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:0.9rem;">
             <span id="monthDisplay"></span>
-            <span style="font-size: 0.7rem; color: #666;">青枠は記録あり</span>
         </div>
         <div id="calendarGrid" class="calendar-grid"></div>
-        <div id="dayDetail">日付をタップすると履歴が表示されます</div>
+        <div id="dayDetail">日付をタップすると詳細が表示されます</div>
     </div>
 </div>
 
 <script>
     const MAX_ABSENT = 5;
-    const storageKey = 'AttendancePro_v1';
+    const storageKey = 'UnivManager_v2';
 
     function getStorage() { return JSON.parse(localStorage.getItem(storageKey) || '{}'); }
 
     function save() {
         const subData = document.getElementById('subjectSelect').value;
         const status = document.querySelector('input[name="status"]:checked').value;
-        const [subject, teacher, room] = subData.split(',');
+        const memo = document.getElementById('memoInput').value;
+        const [subject, teacher, room, credit] = subData.split(',');
         const today = new Date().toLocaleDateString('sv-SE');
 
         let data = getStorage();
         if (!data[today]) data[today] = {};
-        data[today][subject] = { status, teacher, room, time: new Date().toLocaleTimeString() };
+        data[today][subject] = { status, teacher, room, credit: parseInt(credit), memo, time: new Date().toLocaleTimeString() };
         
         localStorage.setItem(storageKey, JSON.stringify(data));
+        document.getElementById('memoInput').value = ''; // 入力後リセット
         updateUI();
         showDetail(today);
     }
 
     function updateUI() {
-        const subject = document.getElementById('subjectSelect').value.split(',')[0];
+        const subData = document.getElementById('subjectSelect').value;
+        const subject = subData.split(',')[0];
         const data = getStorage();
+        
         let absentCount = 0;
+        let registeredSubjects = new Set();
+        let creditTotal = 0;
 
+        // 全データから単位数と欠席数を集計
         for (let date in data) {
-            if (data[date][subject] && data[date][subject].status === '欠席') absentCount++;
+            for (let s in data[date]) {
+                if (!registeredSubjects.has(s)) {
+                    registeredSubjects.add(s);
+                    creditTotal += data[date][s].credit || 0;
+                }
+                if (s === subject && data[date][s].status === '欠席') absentCount++;
+            }
         }
 
+        document.getElementById('totalCredits').innerText = creditTotal;
         const remaining = MAX_ABSENT - absentCount;
         document.getElementById('remainCount').innerText = remaining;
-        document.getElementById('subjectLabel').innerText = subject + " の残り";
+        document.getElementById('subjectLabel').innerText = subject.substring(0,6) + "…残り";
 
-        // 警告テロップ（残り2回以下で表示）
-        const telop = document.getElementById('alertTelop');
-        telop.style.display = (remaining <= 2) ? 'block' : 'none';
-        
+        document.getElementById('alertTelop').style.display = (remaining <= 2) ? 'block' : 'none';
         renderCalendar();
     }
 
     function renderCalendar() {
         const grid = document.getElementById('calendarGrid');
-        const monthDisp = document.getElementById('monthDisplay');
         const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth();
-        
-        monthDisp.innerText = `${year}年 ${month + 1}月`;
+        const year = now.getFullYear(); const month = now.getMonth();
+        document.getElementById('monthDisplay').innerText = `${year}年 ${month + 1}月`;
         grid.innerHTML = '';
 
         const firstDay = new Date(year, month, 1).getDay();
@@ -145,7 +159,6 @@
         const data = getStorage();
 
         for (let i = 0; i < firstDay; i++) grid.innerHTML += '<div></div>';
-
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const hasData = data[dateStr] ? 'has-data' : '';
@@ -157,22 +170,22 @@
         const data = getStorage()[dateStr];
         const detailDiv = document.getElementById('dayDetail');
         if (!data) {
-            detailDiv.innerHTML = `<strong>${dateStr}</strong><br>記録はありません。`;
+            detailDiv.innerHTML = `<strong>${dateStr}</strong><br>記録なし`;
             return;
         }
 
-        let html = `<strong>${dateStr}</strong><hr style="border:none; border-top:1px solid #ddd;">`;
+        let html = `<strong>${dateStr}</strong><br>`;
         for (let sub in data) {
             const info = data[sub];
             html += `<div class="log-entry status-${info.status}">
-                        <b>${info.status}</b>: ${sub}<br>
+                        <b>${info.status}</b>: ${sub} (${info.credit}単)<br>
                         <small>${info.teacher} / ${info.room}</small>
+                        ${info.memo ? `<div class="memo-text">メモ: ${info.memo}</div>` : ''}
                      </div>`;
         }
         detailDiv.innerHTML = html;
     }
 
-    // 初回起動
     updateUI();
 </script>
 
