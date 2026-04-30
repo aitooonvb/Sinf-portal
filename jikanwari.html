@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大学生活管理システム Pro</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --cell-white: #ffffff;
+            --cell-blue: #e3f2fd;
+            --cell-red: #ffebee;
+            --cell-green: #e8f5e9;
+            --cell-yellow: #fffde7;
+            --cell-pink: #fce4ec;
+            --text-main: #333;
+            --accent: #4a90e2;
+        }
+        body { font-family: "Helvetica Neue", Arial, sans-serif; background-color: var(--bg-color); margin: 0; padding: 10px; color: var(--text-main); }
+        .container { max-width: 600px; margin: auto; }
+        
+        /* タブ切り替え */
+        .tab-menu { display: flex; justify-content: space-around; background: #fff; border-radius: 10px; margin-bottom: 15px; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .tab-btn { border: none; background: none; padding: 10px 20px; font-weight: bold; cursor: pointer; color: #888; }
+        .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+        .content { display: none; }
+        .content.active { display: block; }
+
+        /* 時間割テーブル */
+        .tt-wrapper { overflow-x: auto; }
+        .tt-table { width: 100%; border-collapse: separate; border-spacing: 6px; table-layout: fixed; }
+        .tt-header th { font-size: 0.8rem; color: #777; padding-bottom: 5px; }
+        .tt-header th.today { color: white; background: var(--accent); border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; }
+        
+        .time-col { width: 45px; font-size: 0.7rem; color: #999; text-align: center; vertical-align: middle; line-height: 1.2; }
+        .period-num { font-size: 1.1rem; font-weight: bold; color: #555; display: block; }
+        
+        .tt-cell { 
+            background: var(--cell-white); 
+            height: 100px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03); 
+            cursor: pointer; 
+            padding: 5px; 
+            text-align: center; 
+            font-size: 0.75rem;
+            transition: transform 0.1s;
+            position: relative;
+        }
+        .tt-cell:active { transform: scale(0.95); }
+        .cell-sub { font-weight: bold; display: block; margin-top: 5px; color: #444; }
+        .cell-room { color: #888; font-size: 0.7rem; margin-top: 2px; }
+
+        /* 設定モーダル */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 15% auto; padding: 20px; width: 80%; max-width: 400px; border-radius: 15px; }
+        .color-picker { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .color-opt { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ddd; cursor: pointer; }
+        select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; }
+        button.save { background: var(--accent); color: white; border: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tab-menu">
+        <button class="tab-btn" onclick="openTab('attendance')">出欠登録</button>
+        <button class="tab-btn active" onclick="openTab('timetable')">時間割</button>
+    </div>
+
+    <!-- 出欠登録タブ (簡易版を表示) -->
+    <div id="attendance" class="content">
+        <div style="background: white; padding: 20px; border-radius: 15px;">
+            <h3>本日の出欠記録</h3>
+            <p>※前の回答の機能と統合してご利用ください</p>
+        </div>
+    </div>
+
+    <!-- 時間割タブ -->
+    <div id="timetable" class="content active">
+        <div class="tt-wrapper">
+            <table class="tt-table">
+                <thead>
+                    <tr class="tt-header">
+                        <th></th>
+                        <th>月</th><th>火</th><th>水</th><th id="th-thu">木</th><th>金</th>
+                    </tr>
+                </thead>
+                <tbody id="tt-body">
+                    <!-- JavaScriptで生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 設定モーダル -->
+<div id="setupModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle">コマの設定</h3>
+        <label>授業セットを選択</label>
+        <select id="subSelect">
+            <option value="none, , ">未設定 (空欄)</option>
+            <option value="データサイエンス基礎,山田太郎,101教室">データサイエンス基礎 (山田 / 101)</option>
+            <option value="線形代数,佐藤花子,203教室">線形代数 (佐藤 / 203)</option>
+            <option value="情報IT概論,鈴木一郎,305教室">情報IT概論 (鈴木 / 305)</option>
+            <option value="気象学,田中次郎,401教室">気象学 (田中 / 401)</option>
+        </select>
+        
+        <label style="display:block; margin-top:15px;">ラベルカラー</label>
+        <div class="color-picker">
+            <div class="color-opt" style="background: var(--cell-white);" onclick="selectColor('white')"></div>
+            <div class="color-opt" style="background: #bbdefb;" onclick="selectColor('blue')"></div>
+            <div class="color-opt" style="background: #ffcdd2;" onclick="selectColor('red')"></div>
+            <div class="color-opt" style="background: #c8e6c9;" onclick="selectColor('green')"></div>
+            <div class="color-opt" style="background: #fff9c4;" onclick="selectColor('yellow')"></div>
+            <div class="color-opt" style="background: #f8bbd0;" onclick="selectColor('pink')"></div>
+        </div>
+        <button class="save" onclick="saveCell()">保存する</button>
+        <button style="background:#eee; color:#666;" onclick="closeModal()">キャンセル</button>
+    </div>
+</div>
+
+<script>
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+    const times = ["08:45|10:15", "10:30|12:00", "13:00|14:30", "14:45|16:15", "16:30|18:00"];
+    let currentEditId = null;
+    let selectedColor = 'blue';
+
+    // タブ切り替え
+    function openTab(id) {
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    // 時間割生成
+    function initTimetable() {
+        const body = document.getElementById('tt-body');
+        const savedData = JSON.parse(localStorage.getItem('myTimetable') || '{}');
+        
+        // 今日の曜日を強調（木曜日を青丸にする例）
+        const dayIdx = new Date().getDay(); // 0:日, 4:木
+        if(dayIdx === 4) document.getElementById('th-thu').classList.add('today');
+
+        for (let i = 1; i <= 5; i++) {
+            let row = `<tr><td class="time-col"><span class="period-num">${i}</span>${times[i-1].replace('|','<br>')}</td>`;
+            days.forEach(day => {
+                const id = `${day}-${i}`;
+                const cellData = savedData[id] || { sub: '', room: '', color: 'white' };
+                const bgColor = `var(--cell-${cellData.color})`;
+                row += `<td id="${id}" class="tt-cell" style="background:${bgColor}" onclick="openModal('${id}')">
+                            <span class="cell-sub">${cellData.sub}</span>
+                            <span class="cell-room">${cellData.room}</span>
+                        </td>`;
+            });
+            row += `</tr>`;
+            body.innerHTML += row;
+        }
+    }
+
+    function openModal(id) {
+        currentEditId = id;
+        document.getElementById('setupModal').style.display = 'block';
+    }
+
+    function closeModal() { document.getElementById('setupModal').style.display = 'none'; }
+
+    function selectColor(color) { selectedColor = color; }
+
+    function saveCell() {
+        const select = document.getElementById('subSelect');
+        const [sub, teacher, room] = select.value.split(',');
+        const cell = document.getElementById(currentEditId);
+        
+        // 画面更新
+        cell.style.backgroundColor = `var(--cell-${selectedColor})`;
+        cell.querySelector('.cell-sub').innerText = sub === 'none' ? '' : sub;
+        cell.querySelector('.cell-room').innerText = room || '';
+
+        // 保存
+        let savedData = JSON.parse(localStorage.getItem('myTimetable') || '{}');
+        savedData[currentEditId] = { sub: (sub === 'none' ? '' : sub), room: room || '', color: selectedColor };
+        localStorage.setItem('myTimetable', JSON.stringify(savedData));
+        
+        closeModal();
+    }
+
+    initTimetable();
+</script>
+</body>
+</html>
