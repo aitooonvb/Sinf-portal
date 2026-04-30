@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学校ポータル</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- ▼ PWA用の設定 ここから -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a4fa0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="学校ポータル">
+<link rel="apple-touch-icon" href="icon.png">
+<!-- ▲ PWA用の設定 ここまで -->
+<style>
+  :root {
+    --primary: #1a4fa0;
+    --primary-light: #2563cc;
+    --primary-soft: #e8effe;
+    --accent: #f59e0b;
+    --accent-soft: #fef3c7;
+    --success: #10b981;
+    --danger: #ef4444;
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 14px;
+    --shadow: 0 2px 12px rgba(26,79,160,0.08);
+    --shadow-lg: 0 8px 32px rgba(26,79,160,0.13);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ヘッダー */
+  header {
+    background: var(--primary);
+    color: #fff;
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(26,79,160,0.25);
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .school-icon {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .school-name { font-size: 17px; font-weight: 700; letter-spacing: 0.02em; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .notif-bell {
+    position: relative; cursor: pointer;
+    background: rgba(255,255,255,0.15);
+    border: none; border-radius: 50%;
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #fff; transition: background 0.2s;
+  }
+  .notif-bell:hover { background: rgba(255,255,255,0.28); }
+  .notif-badge {
+    position: absolute; top: 4px; right: 4px;
+    background: var(--accent); color: #fff;
+    font-size: 10px; font-weight: 700;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--primary);
+  }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: #fff;
+    cursor: pointer;
+  }
+
+  /* メインレイアウト */
+  main { max-width: 900px; margin: 0 auto; padding: 28px 16px 48px; }
+
+  /* ご挨拶 */
+  .greeting {
+    margin-bottom: 24px;
+  }
+  .greeting h1 { font-size: 22px; font-weight: 700; color: var(--primary); }
+  .greeting p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+
+  /* セクション */
+  .section-title {
+    font-size: 13px; font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  /* クイックアクセス */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .quick-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 12px 14px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.18s;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .quick-btn::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--btn-color, var(--primary));
+    border-radius: 3px 3px 0 0;
+  }
+  .quick-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--btn-color, var(--primary));
+  }
+  .quick-btn:active { transform: translateY(-1px); }
+  .btn-icon {
+    width: 46px; height: 46px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    background: var(--btn-soft, var(--primary-soft));
+  }
+  .btn-label { font-size: 13px; font-weight: 600; line-height: 1.3; }
+  .btn-sub { font-size: 11px; color: var(--text-muted); }
+
+  /* 管理ボタン */
+  .manage-row {
+    display: flex; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .manage-btn {
+    background: var(--primary-soft);
+    border: 1.5px solid var(--primary);
+    color: var(--primary);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .manage-btn:hover { background: var(--primary); color: #fff; }
+
+  /* お知らせ */
+  .notice-panel {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .notice-item {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; gap: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+    animation: fadeIn 0.3s ease both;
+  }
+  .notice-item:last-child { border-bottom: none; }
+  .notice-item:hover { background: var(--primary-soft); }
+  .notice-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    margin-top: 6px; flex-shrink: 0;
+  }
+  .dot-new { background: var(--primary); }
+  .dot-read { background: var(--border); }
+  .notice-content { flex: 1; }
+  .notice-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .notice-title.read { font-weight: 400; color: var(--text-muted); }
+  .notice-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 10px; }
+  .notice-tag {
+    font-size: 11px; font-weight: 700; padding: 2px 8px;
+    border-radius: 100px;
+    flex-shrink: 0; align-self: center;
+  }
+  .tag-info { background: var(--primary-soft); color: var(--primary); }
+  .tag-urgent { background: #fee2e2; color: var(--danger); }
+  .tag-event { background: var(--accent-soft); color: #b45309; }
+
+  /* お知らせ詳細モーダル */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 200;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    max-width: 520px; width: 100%;
+    max-height: 80vh; overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.22s ease;
+  }
+  .modal-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .modal-close {
+    background: none; border: none; font-size: 22px;
+    cursor: pointer; color: var(--text-muted);
+    line-height: 1; flex-shrink: 0;
+  }
+  .modal-body { padding: 18px 20px; font-size: 14px; line-height: 1.8; color: var(--text); }
+  .modal-meta { font-size: 12px; color: var(--text-muted); margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+  /* お知らせ追加フォーム */
+  .add-form {
+    display: none;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1.5px solid var(--primary);
+    padding: 18px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+    animation: fadeIn 0.2s ease;
+  }
+  .add-form.open { display: block; }
+  .form-row { margin-bottom: 12px; }
+  .form-row label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+  .form-row input, .form-row textarea, .form-row select {
+    width: 100%; padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 14px;
+    font-family: inherit; color: var(--text);
+    background: var(--bg);
+    outline: none; transition: border-color 0.15s;
+  }
+  .form-row input:focus, .form-row textarea:focus, .form-row select:focus {
+    border-color: var(--primary);
+  }
+  .form-row textarea { resize: vertical; min-height: 80px; }
+  .form-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-post {
+    background: var(--primary); color: #fff;
+    border: none; border-radius: 8px;
+    padding: 9px 20px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-post:hover { background: var(--primary-light); }
+  .btn-cancel {
+    background: none; border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 9px 16px;
+    font-size: 14px; cursor: pointer; color: var(--text-muted);
+    transition: border-color 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--text-muted); }
+
+  /* リンク管理モーダル */
+  .link-modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    max-width: 480px; width: 100%;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.22s ease;
+    max-height: 80vh; overflow-y: auto;
+  }
+
+  /* アニメーション */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+
+  /* 空状態 */
+  .empty { text-align: center; padding: 32px 20px; color: var(--text-muted); font-size: 14px; }
+
+  /* レスポンシブ */
+  @media (max-width: 480px) {
+    .quick-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .btn-icon { width: 38px; height: 38px; font-size: 18px; }
+    .btn-label { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="school-icon">🏫</div>
+    <span class="school-name">学校ポータル</span>
+  </div>
+  <div class="header-right">
+    <button class="notif-bell" onclick="scrollToNotices()" title="お知らせ">
+      🔔
+      <span class="notif-badge" id="badge">0</span>
+    </button>
+    <div class="avatar" title="山田 先生">山</div>
+  </div>
+</header>
+
+<main>
+  <div class="greeting">
+    <h1>おはようございます、山田先生 👋</h1>
+    <p id="today-date"></p>
+  </div>
+
+  <!-- クイックアクセス -->
+  <div class="section-title">クイックアクセス</div>
+  <div class="manage-row">
+    <button class="manage-btn" onclick="openLinkManager()">＋ リンクを編集</button>
+  </div>
+  <div class="quick-grid" id="quick-grid"></div>
+
+  <!-- お知らせ -->
+  <div class="section-title" id="notices-section">お知らせ</div>
+  <div class="manage-row">
+    <button class="manage-btn" onclick="toggleAddForm()">＋ お知らせを投稿</button>
+    <button class="manage-btn" onclick="markAllRead()">すべて既読にする</button>
+  </div>
+
+  <div class="add-form" id="add-form">
+    <div class="form-row">
+      <label>タイトル</label>
+      <input type="text" id="new-title" placeholder="お知らせのタイトル">
+    </div>
+    <div class="form-row">
+      <label>本文</label>
+      <textarea id="new-body" placeholder="内容を入力してください..."></textarea>
+    </div>
+    <div class="form-row">
+      <label>カテゴリ</label>
+      <select id="new-tag">
+        <option value="info">お知らせ</option>
+        <option value="urgent">緊急</option>
+        <option value="event">行事</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="toggleAddForm()">キャンセル</button>
+      <button class="btn-post" onclick="postNotice()">投稿する</button>
+    </div>
+  </div>
+
+  <div class="notice-panel" id="notice-panel"></div>
+</main>
+
+<!-- お知らせ詳細モーダル -->
+<div class="modal-overlay" id="notice-modal" onclick="closeModal('notice-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title"></div>
+      <button class="modal-close" onclick="closeModal('notice-modal')">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- リンク管理モーダル -->
+<div class="modal-overlay" id="link-modal" onclick="closeModal('link-modal')">
+  <div class="link-modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">リンクを編集</div>
+      <button class="modal-close" onclick="closeModal('link-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="link-list" style="margin-bottom:16px;"></div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">新しいリンクを追加</div>
+        <div class="form-row"><label>ラベル名</label><input type="text" id="new-link-label" placeholder="例：Google Classroom"></div>
+        <div class="form-row"><label>URL</label><input type="text" id="new-link-url" placeholder="https://..."></div>
+        <div class="form-row"><label>アイコン（絵文字）</label><input type="text" id="new-link-icon" placeholder="📚" maxlength="2"></div>
+        <div class="form-actions"><button class="btn-post" onclick="addLink()">追加する</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = [
+  { color: '#1a4fa0', soft: '#e8effe' },
+  { color: '#10b981', soft: '#d1fae5' },
+  { color: '#f59e0b', soft: '#fef3c7' },
+  { color: '#ef4444', soft: '#fee2e2' },
+  { color: '#8b5cf6', soft: '#ede9fe' },
+  { color: '#06b6d4', soft: '#cffafe' },
+];
+
+let links = [
+  { id: 1, label: 'Google Classroom', url: 'https://classroom.google.com', icon: '📚' },
+  { id: 2, label: '校務支援システム', url: 'https://example.com', icon: '🖥️' },
+  { id: 3, label: '図書館蔵書検索', url: 'https://example.com', icon: '📖' },
+  { id: 4, label: '出欠管理', url: 'https://example.com', icon: '✅' },
+  { id: 5, label: '時間割', url: 'https://example.com', icon: '📅' },
+  { id: 6, label: 'メール', url: 'https://mail.google.com', icon: '✉️' },
+];
+
+let notices = [
+  { id: 1, title: '5月の行事予定について', body: '5月の行事予定を更新しました。運動会の日程は5月25日（土）となっております。詳細は添付の資料をご確認ください。', date: '2026-04-30', tag: 'event', read: false },
+  { id: 2, title: '【緊急】明日の登校時刻変更', body: '明日4月30日（木）は校内工事のため、登校時刻を通常より30分遅い8時30分とします。生徒へのご連絡をお願いいたします。', date: '2026-04-29', tag: 'urgent', read: false },
+  { id: 3, title: '職員会議のお知らせ', body: '来週月曜日5月6日（月）の15:00より、第1会議室にて職員会議を開催します。参加をよろしくお願いします。', date: '2026-04-28', tag: 'info', read: true },
+  { id: 4, title: '健康診断の日程連絡', body: '今年度の健康診断を5月15日（水）に実施します。対象クラスは各学年の担任にご連絡済みです。', date: '2026-04-25', tag: 'info', read: true },
+];
+
+let nextLinkId = 10;
+let nextNoticeId = 10;
+
+function renderQuickGrid() {
+  const grid = document.getElementById('quick-grid');
+  grid.innerHTML = links.map((l, i) => {
+    const c = COLORS[i % COLORS.length];
+    return `<a class="quick-btn" href="${l.url}" target="_blank" rel="noopener"
+      style="--btn-color:${c.color};--btn-soft:${c.soft};">
+      <div class="btn-icon">${l.icon}</div>
+      <span class="btn-label">${l.label}</span>
+    </a>`;
+  }).join('');
+}
+
+function renderNotices() {
+  const panel = document.getElementById('notice-panel');
+  if (!notices.length) {
+    panel.innerHTML = '<div class="empty">お知らせはありません</div>';
+    updateBadge(); return;
+  }
+  const tagMap = { info: ['tag-info','お知らせ'], urgent: ['tag-urgent','緊急'], event: ['tag-event','行事'] };
+  panel.innerHTML = notices.map(n => {
+    const [cls, label] = tagMap[n.tag] || tagMap.info;
+    return `<div class="notice-item" onclick="openNotice(${n.id})">
+      <div class="notice-dot ${n.read ? 'dot-read' : 'dot-new'}"></div>
+      <div class="notice-content">
+        <div class="notice-title${n.read ? ' read' : ''}">${n.title}</div>
+        <div class="notice-meta"><span>${n.date}</span></div>
+      </div>
+      <span class="notice-tag ${cls}">${label}</span>
+    </div>`;
+  }).join('');
+  updateBadge();
+}
+
+function updateBadge() {
+  const cnt = notices.filter(n => !n.read).length;
+  const badge = document.getElementById('badge');
+  badge.textContent = cnt;
+  badge.style.display = cnt > 0 ? 'flex' : 'none';
+}
+
+function openNotice(id) {
+  const n = notices.find(x => x.id === id);
+  if (!n) return;
+  n.read = true;
+  document.getElementById('modal-title').textContent = n.title;
+  document.getElementById('modal-body').innerHTML = `<p>${n.body}</p><div class="modal-meta">${n.date}　カテゴリ：${{ info:'お知らせ', urgent:'緊急', event:'行事' }[n.tag]}</div>`;
+  document.getElementById('notice-modal').classList.add('open');
+  renderNotices();
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function toggleAddForm() {
+  const f = document.getElementById('add-form');
+  f.classList.toggle('open');
+}
+
+function postNotice() {
+  const title = document.getElementById('new-title').value.trim();
+  const body = document.getElementById('new-body').value.trim();
+  const tag = document.getElementById('new-tag').value;
+  if (!title) { alert('タイトルを入力してください'); return; }
+  const today = new Date().toISOString().slice(0,10);
+  notices.unshift({ id: nextNoticeId++, title, body: body || '（本文なし）', date: today, tag, read: false });
+  document.getElementById('new-title').value = '';
+  document.getElementById('new-body').value = '';
+  document.getElementById('add-form').classList.remove('open');
+  renderNotices();
+}
+
+function markAllRead() {
+  notices.forEach(n => n.read = true);
+  renderNotices();
+}
+
+function scrollToNotices() {
+  document.getElementById('notices-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function openLinkManager() {
+  renderLinkList();
+  document.getElementById('link-modal').classList.add('open');
+}
+
+function renderLinkList() {
+  const el = document.getElementById('link-list');
+  if (!links.length) { el.innerHTML = '<div class="empty">リンクがありません</div>'; return; }
+  el.innerHTML = links.map(l => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:20px;">${l.icon}</span>
+      <span style="flex:1;font-size:14px;font-weight:500;">${l.label}</span>
+      <button onclick="removeLink(${l.id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:18px;" title="削除">×</button>
+    </div>`).join('');
+}
+
+function removeLink(id) {
+  links = links.filter(l => l.id !== id);
+  renderLinkList();
+  renderQuickGrid();
+}
+
+function addLink() {
+  const label = document.getElementById('new-link-label').value.trim();
+  const url = document.getElementById('new-link-url').value.trim();
+  const icon = document.getElementById('new-link-icon').value.trim() || '🔗';
+  if (!label || !url) { alert('ラベルとURLを入力してください'); return; }
+  const fullUrl = url.startsWith('http') ? url : 'https://' + url;
+  links.push({ id: nextLinkId++, label, url: fullUrl, icon });
+  document.getElementById('new-link-label').value = '';
+  document.getElementById('new-link-url').value = '';
+  document.getElementById('new-link-icon').value = '';
+  renderLinkList();
+  renderQuickGrid();
+}
+
+// 今日の日付
+const d = new Date();
+const days = ['日','月','火','水','木','金','土'];
+document.getElementById('today-date').textContent =
+  `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+
+renderQuickGrid();
+renderNotices();
+</script>
+
+<!-- ▼ Service Worker登録 ここから -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('./sw.js')
+        .then(function(reg) { console.log('PWA: Service Worker登録成功'); })
+        .catch(function(err) { console.log('PWA: Service Worker登録失敗', err); });
+    });
+  }
+</script>
+<!-- ▲ Service Worker登録 ここまで -->
+</body>
+</html>
