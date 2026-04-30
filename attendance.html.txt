@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>My Profile</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 1rem;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+        }
+        h2 {
+            border-bottom: 2px solid #333;
+        }
+        .hobby-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .hobby-item {
+            background: #e2e2e2;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>My Personal Page</h1>
+    </header>
+
+    <main>
+        <section>
+            <h2>プロフィール</h2>
+            <p>こんにちは！現在、大学でデータサイエンスや情報技術について学んでいます。</p>
+        </section>
+
+        <section>
+            <h2>趣味・興味のあること</h2>
+            <div class="hobby-list">
+                <span class="hobby-item">ゲーム</span>
+                <span class="hobby-item">カラオケ</span>
+                <span class="hobby-item">パチンコ研究</span>
+                <span class="hobby-item">気象学</span>
+            </div>
+        </section>
+
+        <section>
+            <h2>最近の学習内容</h2>
+            <ul>
+                <li>線形代数（行列計算など）</li>
+                <li>ITの歴史（Intelや集成回路の発展）</li>
+                <li>プログラミング基礎</li>
+            </ul>
+        </section>
+    </main>
+
+</body>
+</html>
