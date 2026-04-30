@@ -2,73 +2,106 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>My Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出欠登録システム</title>
     <style>
-        body {
-            font-family: "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        header {
-            background-color: #333;
-            color: #fff;
-            padding: 1rem;
-            text-align: center;
-        }
-        main {
-            padding: 20px;
-            max-width: 800px;
-            margin: auto;
-            background: #fff;
-        }
-        h2 {
-            border-bottom: 2px solid #333;
-        }
-        .hobby-list {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .hobby-item {
-            background: #e2e2e2;
-            padding: 5px 15px;
-            border-radius: 20px;
-        }
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; background-color: #f0f2f5; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { font-size: 1.2rem; color: #333; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, button { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; margin-top: 10px; }
+        button:hover { background-color: #0056b3; }
+        .log { margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
+        .log-item { background: #e9ecef; padding: 10px; margin-bottom: 5px; border-radius: 5px; font-size: 0.9rem; }
+        .status { text-align: center; font-weight: bold; color: #28a745; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>My Personal Page</h1>
-    </header>
+<div class="container">
+    <h1>出欠登録</h1>
+    <div id="statusMsg" class="status"></div>
 
-    <main>
-        <section>
-            <h2>プロフィール</h2>
-            <p>こんにちは！現在、大学でデータサイエンスや情報技術について学んでいます。</p>
-        </section>
+    <div class="form-group">
+        <label>科目を選択してください</label>
+        <select id="subjectSelect">
+            <option value="">-- 選択してください --</option>
+            <option value="データサイエンス基礎,山田太郎,101教室">データサイエンス基礎 (山田 / 101教室)</option>
+            <option value="線形代数,佐藤花子,203教室">線形代数 (佐藤 / 203教室)</option>
+            <option value="情報IT概論,鈴木一郎,305教室">情報IT概論 (鈴木 / 305教室)</option>
+            <option value="気象学,田中次郎,401教室">気象学 (田中 / 401教室)</option>
+        </select>
+    </div>
 
-        <section>
-            <h2>趣味・興味のあること</h2>
-            <div class="hobby-list">
-                <span class="hobby-item">ゲーム</span>
-                <span class="hobby-item">カラオケ</span>
-                <span class="hobby-item">パチンコ研究</span>
-                <span class="hobby-item">気象学</span>
-            </div>
-        </section>
+    <button onclick="registerAttendance()">登録 / 変更</button>
 
-        <section>
-            <h2>最近の学習内容</h2>
-            <ul>
-                <li>線形代数（行列計算など）</li>
-                <li>ITの歴史（Intelや集成回路の発展）</li>
-                <li>プログラミング基礎</li>
-            </ul>
-        </section>
-    </main>
+    <div class="log">
+        <h3>本日の登録状況</h3>
+        <div id="attendanceLog"></div>
+    </div>
+</div>
+
+<script>
+    // 今日の日付を取得 (YYYY-MM-DD)
+    const getToday = () => new Date().toISOString().split('T')[0];
+
+    function registerAttendance() {
+        const select = document.getElementById('subjectSelect');
+        const statusMsg = document.getElementById('statusMsg');
+        
+        if (!select.value) {
+            alert("科目を選択してください");
+            return;
+        }
+
+        const [subject, teacher, room] = select.value.split(',');
+        const today = getToday();
+        
+        // ローカルストレージから既存データを取得
+        let data = JSON.parse(localStorage.getItem('attendanceData') || '{}');
+        
+        // 日付ごとの枠を作成
+        if (!data[today]) data[today] = {};
+
+        // 登録（既に同じ科目があれば上書き＝変更になる）
+        data[today][subject] = {
+            teacher: teacher,
+            room: room,
+            time: new Date().toLocaleTimeString()
+        };
+
+        localStorage.setItem('attendanceData', JSON.stringify(data));
+        statusMsg.innerText = "登録を完了/更新しました！";
+        showLog();
+    }
+
+    function showLog() {
+        const logDiv = document.getElementById('attendanceLog');
+        const today = getToday();
+        let data = JSON.parse(localStorage.getItem('attendanceData') || '{}');
+        
+        logDiv.innerHTML = "";
+        if (data[today]) {
+            for (let sub in data[today]) {
+                const info = data[today][sub];
+                logDiv.innerHTML += `
+                    <div class="log-item">
+                        <strong>${sub}</strong><br>
+                        教員: ${info.teacher} / 教室: ${info.room}<br>
+                        <small>更新時刻: ${info.time}</small>
+                    </div>
+                `;
+            }
+        } else {
+            logDiv.innerHTML = "<p>本日の登録はありません。</p>";
+        }
+    }
+
+    // 初回読み込み時に表示
+    showLog();
+</script>
 
 </body>
 </html>
