@@ -1,192 +1,442 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大学生活管理システム Pro</title>
-    <style>
-        :root {
-            --bg-color: #f0f4f8;
-            --cell-white: #ffffff;
-            --cell-blue: #e3f2fd;
-            --cell-red: #ffebee;
-            --cell-green: #e8f5e9;
-            --cell-yellow: #fffde7;
-            --cell-pink: #fce4ec;
-            --text-main: #333;
-            --accent: #4a90e2;
-        }
-        body { font-family: "Helvetica Neue", Arial, sans-serif; background-color: var(--bg-color); margin: 0; padding: 10px; color: var(--text-main); }
-        .container { max-width: 600px; margin: auto; }
-        
-        /* タブ切り替え */
-        .tab-menu { display: flex; justify-content: space-around; background: #fff; border-radius: 10px; margin-bottom: 15px; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .tab-btn { border: none; background: none; padding: 10px 20px; font-weight: bold; cursor: pointer; color: #888; }
-        .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
-        .content { display: none; }
-        .content.active { display: block; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>時間割</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #eef1f7;
+  --surface: #ffffff;
+  --primary: #1a4fa0;
+  --primary-soft: #e8effe;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: #dde3ef;
+  --radius: 14px;
+  --shadow: 0 1px 6px rgba(0,0,0,0.07);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
+  --cell-h: 110px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
-        /* 時間割テーブル */
-        .tt-wrapper { overflow-x: auto; }
-        .tt-table { width: 100%; border-collapse: separate; border-spacing: 6px; table-layout: fixed; }
-        .tt-header th { font-size: 0.8rem; color: #777; padding-bottom: 5px; }
-        .tt-header th.today { color: white; background: var(--accent); border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; }
-        
-        .time-col { width: 45px; font-size: 0.7rem; color: #999; text-align: center; vertical-align: middle; line-height: 1.2; }
-        .period-num { font-size: 1.1rem; font-weight: bold; color: #555; display: block; }
-        
-        .tt-cell { 
-            background: var(--cell-white); 
-            height: 100px; 
-            border-radius: 12px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.03); 
-            cursor: pointer; 
-            padding: 5px; 
-            text-align: center; 
-            font-size: 0.75rem;
-            transition: transform 0.1s;
-            position: relative;
-        }
-        .tt-cell:active { transform: scale(0.95); }
-        .cell-sub { font-weight: bold; display: block; margin-top: 5px; color: #444; }
-        .cell-room { color: #888; font-size: 0.7rem; margin-top: 2px; }
+/* ヘッダー */
+header{
+  background:var(--primary);color:#fff;
+  padding:0 16px;height:54px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 10px rgba(26,79,160,0.3);
+}
+.hd-left{display:flex;align-items:center;gap:10px;}
+.back-btn{
+  background:rgba(255,255,255,0.15);border:none;border-radius:8px;
+  color:#fff;font-size:18px;cursor:pointer;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  transition:background 0.15s;
+}
+.back-btn:hover{background:rgba(255,255,255,0.28);}
+.hd-title{font-size:17px;font-weight:700;}
+.edit-toggle{
+  background:rgba(255,255,255,0.15);border:none;border-radius:8px;
+  color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+  padding:6px 14px;transition:background 0.15s;font-family:inherit;
+}
+.edit-toggle:hover{background:rgba(255,255,255,0.28);}
+.edit-toggle.active{background:#fff;color:var(--primary);}
 
-        /* 設定モーダル */
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 15% auto; padding: 20px; width: 80%; max-width: 400px; border-radius: 15px; }
-        .color-picker { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
-        .color-opt { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ddd; cursor: pointer; }
-        select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; }
-        button.save { background: var(--accent); color: white; border: none; font-weight: bold; }
-    </style>
+/* 時間割グリッド */
+.grid-wrapper{
+  padding:12px 8px 40px;
+  overflow-x:auto;
+}
+.grid-container{
+  display:grid;
+  grid-template-columns: 48px repeat(5, 1fr);
+  gap:5px;
+  min-width:340px;
+}
+
+/* 曜日ヘッダー */
+.day-header{
+  text-align:center;padding:8px 4px;
+  font-size:14px;font-weight:700;color:var(--text-muted);
+  border-radius:10px;
+}
+.day-header.today{
+  background:var(--primary);color:#fff;
+  border-radius:50%;width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto;
+}
+.period-label{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4px 0;gap:2px;
+}
+.period-num{font-size:16px;font-weight:700;color:var(--text-muted);}
+.period-time{font-size:9px;color:var(--text-muted);line-height:1.4;text-align:center;}
+
+/* セル */
+.cell{
+  height:var(--cell-h);
+  background:var(--surface);
+  border-radius:var(--radius);
+  border:1.5px solid var(--border);
+  box-shadow:var(--shadow);
+  cursor:pointer;
+  transition:all 0.18s;
+  position:relative;
+  overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:6px 4px;
+  text-align:center;
+}
+.cell:hover{border-color:#aab4d0;transform:translateY(-1px);box-shadow:var(--shadow-lg);}
+.cell.edit-mode:hover{border-color:var(--primary);}
+.cell.filled{border-color:transparent;}
+
+/* セルカラー */
+.cell.color-blue  { background:#dbeafe; border-color:#93c5fd; }
+.cell.color-red   { background:#fee2e2; border-color:#fca5a5; }
+.cell.color-green { background:#dcfce7; border-color:#86efac; }
+.cell.color-yellow{ background:#fef9c3; border-color:#fde047; }
+.cell.color-pink  { background:#fce7f3; border-color:#f9a8d4; }
+.cell.color-white { background:#ffffff; border-color:#e2e8f0; }
+
+.cell-name{font-size:12px;font-weight:700;line-height:1.3;color:var(--text);word-break:break-all;}
+.cell-sub{font-size:10px;color:var(--text-muted);margin-top:3px;line-height:1.3;}
+.cell-empty-icon{font-size:20px;color:#c8d3e8;}
+.cell.edit-mode .cell-empty-icon{color:#93c5fd;}
+
+/* 編集モード強調 */
+.cell.edit-mode{
+  border-style:dashed;
+  border-color:#93c5fd;
+}
+.cell.filled.edit-mode{border-style:solid;}
+
+/* モーダルオーバーレイ */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.45);z-index:300;
+  align-items:flex-end;justify-content:center;
+  padding-bottom:0;
+}
+.overlay.open{display:flex;}
+
+/* ボトムシート */
+.sheet{
+  background:var(--surface);
+  border-radius:20px 20px 0 0;
+  width:100%;max-width:500px;
+  max-height:88vh;overflow-y:auto;
+  padding:0 0 40px;
+  animation:slideUp 0.25s ease;
+}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0;}to{transform:none;opacity:1;}}
+
+.sheet-handle{
+  width:40px;height:4px;background:#e2e8f0;border-radius:2px;
+  margin:12px auto 0;
+}
+.sheet-header{
+  padding:16px 20px 0;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.sheet-title{font-size:16px;font-weight:700;}
+.sheet-close{
+  background:none;border:none;font-size:22px;cursor:pointer;
+  color:var(--text-muted);line-height:1;
+}
+.sheet-period{font-size:13px;color:var(--text-muted);padding:4px 20px 14px;border-bottom:1px solid var(--border);}
+
+.sheet-section{padding:16px 20px 0;}
+.sheet-section-title{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:10px;}
+
+/* 科目リスト */
+.subject-option{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);
+  cursor:pointer;margin-bottom:8px;transition:all 0.15s;
+  background:var(--bg);
+}
+.subject-option:hover{border-color:var(--primary);background:var(--primary-soft);}
+.subject-option.selected{border-color:var(--primary);background:var(--primary-soft);}
+.subject-option-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.subject-option-info{flex:1;}
+.subject-option-name{font-size:14px;font-weight:700;}
+.subject-option-meta{font-size:12px;color:var(--text-muted);}
+.subject-option-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.subject-option.selected .subject-option-check{background:var(--primary);border-color:var(--primary);}
+.subject-option.selected .subject-option-check::after{content:'';width:8px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);display:block;}
+
+.none-option{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;border-radius:10px;border:1.5px dashed var(--border);
+  cursor:pointer;margin-bottom:8px;transition:all 0.15s;
+  color:var(--text-muted);font-size:14px;
+}
+.none-option:hover{border-color:#ef4444;color:#ef4444;background:#fef2f2;}
+
+/* カラー選択 */
+.color-row{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;}
+.color-chip{
+  width:36px;height:36px;border-radius:50%;cursor:pointer;
+  border:2.5px solid transparent;transition:all 0.15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.color-chip.selected{border-color:var(--text);transform:scale(1.15);}
+.color-chip.white-chip{border-color:var(--border);}
+.color-chip.white-chip.selected{border-color:#666;}
+
+/* 保存ボタン */
+.save-btn{
+  display:block;width:calc(100% - 40px);margin:20px 20px 0;
+  background:var(--primary);color:#fff;border:none;border-radius:12px;
+  padding:14px;font-size:15px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:background 0.15s;
+}
+.save-btn:hover{background:#1340a0;}
+
+/* トースト */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:#1e293b;color:#fff;padding:11px 22px;border-radius:100px;
+  font-size:14px;font-weight:600;z-index:999;
+  transition:transform 0.3s,opacity 0.3s;opacity:0;pointer-events:none;white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+</style>
 </head>
 <body>
 
-<div class="container">
-    <div class="tab-menu">
-        <button class="tab-btn" onclick="openTab('attendance')">出欠登録</button>
-        <button class="tab-btn active" onclick="openTab('timetable')">時間割</button>
-    </div>
+<header>
+  <div class="hd-left">
+    <button class="back-btn" onclick="history.back()">←</button>
+    <span class="hd-title">📅 時間割</span>
+  </div>
+  <button class="edit-toggle" id="edit-toggle" onclick="toggleEdit()">編集</button>
+</header>
 
-    <!-- 出欠登録タブ (簡易版を表示) -->
-    <div id="attendance.html" class="content">
-        <div style="background: white; padding: 20px; border-radius: 15px;">
-            <h3>本日の出欠記録</h3>
-        </div>
-    </div>
-
-    <!-- 時間割タブ -->
-    <div id="timetable" class="content active">
-        <div class="tt-wrapper">
-            <table class="tt-table">
-                <thead>
-                    <tr class="tt-header">
-                        <th></th>
-                        <th>月</th><th>火</th><th>水</th><th id="th-thu">木</th><th>金</th>
-                    </tr>
-                </thead>
-                <tbody id="tt-body">
-                    <!-- JavaScriptで生成 -->
-                </tbody>
-            </table>
-        </div>
-    </div>
+<div class="grid-wrapper">
+  <div class="grid-container" id="grid"></div>
 </div>
 
-<!-- 設定モーダル -->
-<div id="setupModal" class="modal">
-    <div class="modal-content">
-        <h3 id="modalTitle">コマの設定</h3>
-        <label>授業セットを選択</label>
-        <select id="subSelect">
-            <option value="none, , ">未設定 (空欄)</option>
-            <option value="データサイエンス基礎,山田太郎,101教室">データサイエンス基礎 (山田 / 101)</option>
-            <option value="線形代数,佐藤花子,203教室">線形代数 (佐藤 / 203)</option>
-            <option value="情報IT概論,鈴木一郎,305教室">情報IT概論 (鈴木 / 305)</option>
-            <option value="気象学,田中次郎,401教室">気象学 (田中 / 401)</option>
-        </select>
-        
-        <label style="display:block; margin-top:15px;">ラベルカラー</label>
-        <div class="color-picker">
-            <div class="color-opt" style="background: var(--cell-white);" onclick="selectColor('white')"></div>
-            <div class="color-opt" style="background: #bbdefb;" onclick="selectColor('blue')"></div>
-            <div class="color-opt" style="background: #ffcdd2;" onclick="selectColor('red')"></div>
-            <div class="color-opt" style="background: #c8e6c9;" onclick="selectColor('green')"></div>
-            <div class="color-opt" style="background: #fff9c4;" onclick="selectColor('yellow')"></div>
-            <div class="color-opt" style="background: #f8bbd0;" onclick="selectColor('pink')"></div>
-        </div>
-        <button class="save" onclick="saveCell()">保存する</button>
-        <button style="background:#eee; color:#666;" onclick="closeModal()">キャンセル</button>
+<!-- ボトムシート -->
+<div class="overlay" id="overlay" onclick="closeSheet()">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title" id="sheet-title">コマを編集</div>
+      <button class="sheet-close" onclick="closeSheet()">×</button>
     </div>
+    <div class="sheet-period" id="sheet-period"></div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-title">科目を選択</div>
+      <div id="subject-options"></div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-title">セルの色</div>
+      <div class="color-row" id="color-row"></div>
+    </div>
+
+    <button class="save-btn" onclick="saveCell()">保存する</button>
+  </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-    const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
-    const times = ["08:45|10:15", "10:30|12:00", "13:00|14:30", "14:45|16:15", "16:30|18:00"];
-    let currentEditId = null;
-    let selectedColor = 'blue';
+const DAYS = ['月','火','水','木','金'];
+const PERIODS = [
+  { num: 1, start: '08:45', end: '10:15' },
+  { num: 2, start: '10:30', end: '12:00' },
+  { num: 3, start: '13:00', end: '14:30' },
+  { num: 4, start: '14:45', end: '16:15' },
+  { num: 5, start: '16:30', end: '18:00' },
+];
 
-    // タブ切り替え
-    function openTab(id) {
-        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        event.currentTarget.classList.add('active');
+const SUBJECT_COLORS = [
+  '#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#f97316'
+];
+
+const CELL_COLORS = [
+  { id: 'blue',   bg: '#dbeafe', label: '青' },
+  { id: 'red',    bg: '#fee2e2', label: '赤' },
+  { id: 'green',  bg: '#dcfce7', label: '緑' },
+  { id: 'yellow', bg: '#fef9c3', label: '黄' },
+  { id: 'pink',   bg: '#fce7f3', label: 'ピンク' },
+  { id: 'white',  bg: '#ffffff', label: '白' },
+];
+
+// 科目マスタ（出欠管理と共通の想定）
+let subjects = [
+  { id: 1, name: '線形代数学',          room: '大講義室A',   teacher: '山本 教授',    color: '#2563eb' },
+  { id: 2, name: '微分積分学',          room: '202教室',     teacher: '鈴木 准教授',  color: '#10b981' },
+  { id: 3, name: '情報科学基礎',        room: '情報演習室1', teacher: '田中 助教',    color: '#8b5cf6' },
+  { id: 4, name: '英語コミュニケーション', room: '305教室',  teacher: 'Smith 講師',   color: '#f59e0b' },
+];
+
+// timetable[dayIndex][periodIndex] = { subjectId, color }
+let timetable = {};
+for (let d = 0; d < 5; d++) {
+  timetable[d] = {};
+  for (let p = 0; p < PERIODS.length; p++) {
+    timetable[d][p] = { subjectId: null, color: 'blue' };
+  }
+}
+
+let editMode = false;
+let editingCell = null; // { day, period }
+let tempSubjectId = null;
+let tempColor = 'blue';
+
+// 今日の曜日（0=月〜4=金, それ以外はnull）
+function todayDayIdx() {
+  const w = new Date().getDay(); // 0=日,1=月...
+  return (w >= 1 && w <= 5) ? w - 1 : null;
+}
+
+function toggleEdit() {
+  editMode = !editMode;
+  const btn = document.getElementById('edit-toggle');
+  btn.textContent = editMode ? '完了' : '編集';
+  btn.classList.toggle('active', editMode);
+  renderGrid();
+  showToast(editMode ? '編集モードをオンにしました' : '編集モードをオフにしました');
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  const today = todayDayIdx();
+  let html = '';
+
+  // 左上の空白
+  html += `<div></div>`;
+  // 曜日ヘッダー
+  DAYS.forEach((d, i) => {
+    if (i === today) {
+      html += `<div class="day-header"><div class="day-header today">${d}</div></div>`;
+    } else {
+      html += `<div class="day-header">${d}</div>`;
     }
+  });
 
-    // 時間割生成
-    function initTimetable() {
-        const body = document.getElementById('tt-body');
-        const savedData = JSON.parse(localStorage.getItem('myTimetable') || '{}');
-        
-        // 今日の曜日を強調（木曜日を青丸にする例）
-        const dayIdx = new Date().getDay(); // 0:日, 4:木
-        if(dayIdx === 4) document.getElementById('th-thu').classList.add('today');
+  // 各時限
+  PERIODS.forEach((p, pi) => {
+    // 時限ラベル
+    html += `<div class="period-label">
+      <span class="period-num">${p.num}</span>
+      <span class="period-time">${p.start}<br>|<br>${p.end}</span>
+    </div>`;
 
-        for (let i = 1; i <= 5; i++) {
-            let row = `<tr><td class="time-col"><span class="period-num">${i}</span>${times[i-1].replace('|','<br>')}</td>`;
-            days.forEach(day => {
-                const id = `${day}-${i}`;
-                const cellData = savedData[id] || { sub: '', room: '', color: 'white' };
-                const bgColor = `var(--cell-${cellData.color})`;
-                row += `<td id="${id}" class="tt-cell" style="background:${bgColor}" onclick="openModal('${id}')">
-                            <span class="cell-sub">${cellData.sub}</span>
-                            <span class="cell-room">${cellData.room}</span>
-                        </td>`;
-            });
-            row += `</tr>`;
-            body.innerHTML += row;
-        }
-    }
+    // 各曜日のセル
+    DAYS.forEach((d, di) => {
+      const cell = timetable[di][pi];
+      const subj = cell.subjectId ? subjects.find(s => s.id === cell.subjectId) : null;
+      const colorClass = cell.color ? `color-${cell.color}` : 'color-blue';
+      const filledClass = subj ? 'filled' : '';
+      const editClass = editMode ? 'edit-mode' : '';
 
-    function openModal(id) {
-        currentEditId = id;
-        document.getElementById('setupModal').style.display = 'block';
-    }
+      if (subj) {
+        html += `<div class="cell ${colorClass} ${filledClass} ${editClass}" onclick="cellClick(${di},${pi})">
+          <div class="cell-name">${esc(subj.name)}</div>
+          <div class="cell-sub">${esc(subj.room)}</div>
+          <div class="cell-sub">${esc(subj.teacher)}</div>
+        </div>`;
+      } else {
+        html += `<div class="cell ${editClass}" onclick="cellClick(${di},${pi})">
+          <div class="cell-empty-icon">${editMode ? '＋' : ''}</div>
+        </div>`;
+      }
+    });
+  });
 
-    function closeModal() { document.getElementById('setupModal').style.display = 'none'; }
+  grid.innerHTML = html;
+}
 
-    function selectColor(color) { selectedColor = color; }
+function cellClick(di, pi) {
+  if (!editMode) return;
+  editingCell = { day: di, period: pi };
+  const cell = timetable[di][pi];
+  tempSubjectId = cell.subjectId;
+  tempColor = cell.color || 'blue';
 
-    function saveCell() {
-        const select = document.getElementById('subSelect');
-        const [sub, teacher, room] = select.value.split(',');
-        const cell = document.getElementById(currentEditId);
-        
-        // 画面更新
-        cell.style.backgroundColor = `var(--cell-${selectedColor})`;
-        cell.querySelector('.cell-sub').innerText = sub === 'none' ? '' : sub;
-        cell.querySelector('.cell-room').innerText = room || '';
+  const p = PERIODS[pi];
+  document.getElementById('sheet-title').textContent = `${DAYS[di]}曜日 ${p.num}限を編集`;
+  document.getElementById('sheet-period').textContent = `${p.start} ～ ${p.end}`;
 
-        // 保存
-        let savedData = JSON.parse(localStorage.getItem('myTimetable') || '{}');
-        savedData[currentEditId] = { sub: (sub === 'none' ? '' : sub), room: room || '', color: selectedColor };
-        localStorage.setItem('myTimetable', JSON.stringify(savedData));
-        
-        closeModal();
-    }
+  renderSubjectOptions();
+  renderColorChips();
+  document.getElementById('overlay').classList.add('open');
+}
 
-    initTimetable();
+function renderSubjectOptions() {
+  const el = document.getElementById('subject-options');
+  let html = `<div class="none-option" onclick="selectSubject(null)">🗑️ このコマを空にする</div>`;
+  html += subjects.map(s => `
+    <div class="subject-option${tempSubjectId === s.id ? ' selected' : ''}" onclick="selectSubject(${s.id})">
+      <div class="subject-option-dot" style="background:${s.color};"></div>
+      <div class="subject-option-info">
+        <div class="subject-option-name">${esc(s.name)}</div>
+        <div class="subject-option-meta">${esc(s.room)}　${esc(s.teacher)}</div>
+      </div>
+      <div class="subject-option-check"></div>
+    </div>`).join('');
+  el.innerHTML = html;
+}
+
+function selectSubject(id) {
+  tempSubjectId = id;
+  renderSubjectOptions();
+}
+
+function renderColorChips() {
+  document.getElementById('color-row').innerHTML = CELL_COLORS.map(c => `
+    <div class="color-chip${c.id === tempColor ? ' selected' : ''}${c.id === 'white' ? ' white-chip' : ''}"
+      style="background:${c.bg};"
+      title="${c.label}"
+      onclick="selectColor('${c.id}')">
+      ${c.id === tempColor ? '✓' : ''}
+    </div>`).join('');
+}
+
+function selectColor(id) {
+  tempColor = id;
+  renderColorChips();
+}
+
+function saveCell() {
+  if (!editingCell) return;
+  const { day, period } = editingCell;
+  timetable[day][period] = { subjectId: tempSubjectId, color: tempColor };
+  closeSheet();
+  renderGrid();
+  const subj = tempSubjectId ? subjects.find(s => s.id === tempSubjectId) : null;
+  showToast(subj ? `「${subj.name}」を設定しました` : 'コマをクリアしました');
+}
+
+function closeSheet() {
+  document.getElementById('overlay').classList.remove('open');
+  editingCell = null;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+renderGrid();
 </script>
 </body>
 </html>
