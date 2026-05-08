@@ -210,6 +210,45 @@
   .tag-urgent { background: #fee2e2; color: var(--danger); }
   .tag-event { background: var(--accent-soft); color: #b45309; }
 
+  /* フラグ */
+  .flag-icon { font-size: 16px; cursor: pointer; flex-shrink: 0; align-self: center; transition: transform 0.15s; }
+  .flag-icon:hover { transform: scale(1.2); }
+
+  /* お知らせアクションボタン（詳細モーダル内） */
+  .notice-actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid var(--border); }
+  .notice-action-btn {
+    padding: 6px 14px; border-radius: 8px; border: 1.5px solid var(--border);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    background: var(--bg); color: var(--text); font-family: inherit; transition: all 0.15s;
+  }
+  .notice-action-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .notice-action-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* フラグ選択パネル */
+  .flag-picker { display: flex; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--border); align-items: center; flex-wrap: wrap; }
+  .flag-picker-label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+  .flag-opt { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: all 0.15s; }
+  .flag-opt:hover { transform: scale(1.15); }
+  .flag-opt.selected { border-color: #333; transform: scale(1.2); }
+
+  /* 確認ダイアログ */
+  .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box { background: var(--surface); border-radius: var(--radius); max-width: 400px; width: 100%; padding: 24px; box-shadow: var(--shadow-lg); animation: slideUp 0.2s ease; }
+  .confirm-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .confirm-body { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
+  .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .confirm-cancel { padding: 9px 18px; border: 1.5px solid var(--border); border-radius: 8px; background: none; cursor: pointer; font-size: 14px; font-family: inherit; }
+  .confirm-ok { padding: 9px 18px; background: var(--primary); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 700; font-family: inherit; }
+
+  /* フィルターバー */
+  .filter-bar { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .filter-chip { padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted); transition: all 0.15s; }
+  .filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* ローディング */
+  .loading { text-align: center; padding: 24px; color: var(--text-muted); font-size: 14px; }
+
   /* お知らせ詳細モーダル */
   .modal-overlay {
     display: none; position: fixed; inset: 0;
@@ -362,21 +401,52 @@
     </div>
     <div class="form-actions">
       <button class="btn-cancel" onclick="toggleAddForm()">キャンセル</button>
-      <button class="btn-post" onclick="postNotice()">投稿する</button>
+      <button class="btn-post" onclick="confirmPost()">投稿する</button>
     </div>
   </div>
 
-  <div class="notice-panel" id="notice-panel"></div>
+  <div class="filter-bar">
+    <div class="filter-chip active" onclick="setFilter('all',this)">すべて</div>
+    <div class="filter-chip" onclick="setFilter('unread',this)">未読</div>
+    <div class="filter-chip" onclick="setFilter('flagged',this)">🚩 フラグ</div>
+    <div class="filter-chip" onclick="setFilter('info',this)">お知らせ</div>
+    <div class="filter-chip" onclick="setFilter('urgent',this)">緊急</div>
+    <div class="filter-chip" onclick="setFilter('event',this)">行事</div>
+  </div>
+
+  <div class="notice-panel" id="notice-panel"><div class="loading">読み込み中...</div></div>
 </main>
 
 <!-- お知らせ詳細モーダル -->
-<div class="modal-overlay" id="notice-modal" onclick="closeModal('notice-modal')">
+<div class="modal-overlay" id="notice-modal" onclick="closeNoticeModal()">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
       <div class="modal-title" id="modal-title"></div>
-      <button class="modal-close" onclick="closeModal('notice-modal')">×</button>
+      <button class="modal-close" onclick="closeNoticeModal()">×</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
+    <div class="notice-actions" id="modal-actions"></div>
+    <div class="flag-picker" id="flag-picker" style="display:none;">
+      <span class="flag-picker-label">フラグの色：</span>
+      <div class="flag-opt" style="background:#ef4444;" data-flag="red" onclick="setFlag('red')"></div>
+      <div class="flag-opt" style="background:#f59e0b;" data-flag="orange" onclick="setFlag('orange')"></div>
+      <div class="flag-opt" style="background:#10b981;" data-flag="green" onclick="setFlag('green')"></div>
+      <div class="flag-opt" style="background:#3b82f6;" data-flag="blue" onclick="setFlag('blue')"></div>
+      <div class="flag-opt" style="background:#8b5cf6;" data-flag="purple" onclick="setFlag('purple')"></div>
+      <div class="flag-opt" style="background:#e2e8f0;" data-flag="" onclick="setFlag('')" title="フラグを外す">✕</div>
+    </div>
+  </div>
+</div>
+
+<!-- 投稿確認ダイアログ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">📢 お知らせを投稿しますか？</div>
+    <div class="confirm-body" id="confirm-body"></div>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" onclick="closeConfirm()">キャンセル</button>
+      <button class="confirm-ok" onclick="postNotice()">投稿する</button>
+    </div>
   </div>
 </div>
 
@@ -400,7 +470,41 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── Firebase 初期化 ──
+const firebaseConfig = {
+  apiKey: "AIzaSyAjETeJffVrzn2KPE0SP4sEazeycWT1iGY",
+  authDomain: "school-portal-5a76c.firebaseapp.com",
+  projectId: "school-portal-5a76c",
+  storageBucket: "school-portal-5a76c.firebasestorage.app",
+  messagingSenderId: "769151131409",
+  appId: "1:769151131409:web:8609238bca82fb1938f6b0"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ── 既読・フラグはlocalStorageで端末ごとに管理 ──
+const LS_READ    = 'portal_notice_read';    // Set<docId>
+const LS_FLAGS   = 'portal_notice_flags';   // {docId: 'red'|'orange'|...}
+
+function getReadSet()  { try { return new Set(JSON.parse(localStorage.getItem(LS_READ)  || '[]')); } catch(e){ return new Set(); } }
+function getFlagMap()  { try { return JSON.parse(localStorage.getItem(LS_FLAGS) || '{}'); } catch(e){ return {}; } }
+function saveRead(s)   { localStorage.setItem(LS_READ,  JSON.stringify([...s])); }
+function saveFlags(m)  { localStorage.setItem(LS_FLAGS, JSON.stringify(m)); }
+
+const FLAG_COLORS = {
+  red:    '#ef4444',
+  orange: '#f59e0b',
+  green:  '#10b981',
+  blue:   '#3b82f6',
+  purple: '#8b5cf6',
+};
+
+// ── クイックアクセス ──
 const COLORS = [
   { color: '#1a4fa0', soft: '#e8effe' },
   { color: '#10b981', soft: '#d1fae5' },
@@ -409,25 +513,15 @@ const COLORS = [
   { color: '#8b5cf6', soft: '#ede9fe' },
   { color: '#06b6d4', soft: '#cffafe' },
 ];
-
 let links = [
-  { id: 1, label: 'Moodle', url: 'https://md.kumamoto-u.ac.jp/my/', icon: '✍' },
-  { id: 2, label: 'SOSEKI', url: 'https://casoseki.kumamoto-u.ac.jp/campusweb/portal.do?page=main', icon: '📈' },
+  { id: 1, label: 'Moodle',          url: 'https://md.kumamoto-u.ac.jp/my/', icon: '📚' },
+  { id: 2, label: 'SOSEKI',          url: 'https://casoseki.kumamoto-u.ac.jp/campusweb/portal.do?page=main', icon: '🖥️' },
   { id: 3, label: '教科書検索システム', url: 'https://www.kyushuba-univcoop.jp/textbook/kumamoto-u/', icon: '📖' },
-  { id: 4, label: '出欠管理', url: 'attendance.html', icon: '✅' },
-  { id: 5, label: '時間割', url: 'jikanwari.html', icon: '📅' },
-  { id: 6, label: 'メール', url: 'https://mail.google.com', icon: '✉️' },
+  { id: 4, label: '出欠管理',         url: './attendance.html', icon: '✅' },
+  { id: 5, label: '時間割',           url: './timetable.html',  icon: '📅' },
+  { id: 6, label: 'メール',           url: 'https://mail.google.com', icon: '✉️' },
 ];
-
-let notices = [
-  { id: 1, title: '5月の行事予定について', body: '5月の行事予定を更新しました。運動会の日程は5月25日（土）となっております。詳細は添付の資料をご確認ください。', date: '2026-04-30', tag: 'event', read: false },
-  { id: 2, title: '【緊急】明日の登校時刻変更', body: '明日4月30日（木）は校内工事のため、登校時刻を通常より30分遅い8時30分とします。生徒へのご連絡をお願いいたします。', date: '2026-04-29', tag: 'urgent', read: false },
-  { id: 3, title: '職員会議のお知らせ', body: '来週月曜日5月6日（月）の15:00より、第1会議室にて職員会議を開催します。参加をよろしくお願いします。', date: '2026-04-28', tag: 'info', read: true },
-  { id: 4, title: '健康診断の日程連絡', body: '今年度の健康診断を5月15日（水）に実施します。対象クラスは各学年の担任にご連絡済みです。', date: '2026-04-25', tag: 'info', read: true },
-];
-
 let nextLinkId = 10;
-let nextNoticeId = 10;
 
 function renderQuickGrid() {
   const grid = document.getElementById('quick-grid');
@@ -441,79 +535,219 @@ function renderQuickGrid() {
   }).join('');
 }
 
+// ── お知らせ ──
+let allNotices = [];   // Firestoreから取得した全件
+let currentFilter = 'all';
+let activeNoticeId = null; // 詳細表示中のdocId
+
+// Firestoreをリアルタイム購読
+const noticesCol = collection(db, 'notices');
+const noticesQuery = query(noticesCol, orderBy('createdAt', 'desc'));
+onSnapshot(noticesQuery, (snapshot) => {
+  allNotices = snapshot.docs.map(d => ({ docId: d.id, ...d.data() }));
+  renderNotices();
+  updateBadge();
+});
+
 function renderNotices() {
   const panel = document.getElementById('notice-panel');
-  if (!notices.length) {
+  const readSet  = getReadSet();
+  const flagMap  = getFlagMap();
+  const tagMap   = { info: ['tag-info','お知らせ'], urgent: ['tag-urgent','緊急'], event: ['tag-event','行事'] };
+
+  let filtered = allNotices.filter(n => {
+    if (currentFilter === 'unread')  return !readSet.has(n.docId);
+    if (currentFilter === 'flagged') return !!flagMap[n.docId];
+    if (['info','urgent','event'].includes(currentFilter)) return n.tag === currentFilter;
+    return true;
+  });
+
+  if (!filtered.length) {
     panel.innerHTML = '<div class="empty">お知らせはありません</div>';
-    updateBadge(); return;
+    return;
   }
-  const tagMap = { info: ['tag-info','お知らせ'], urgent: ['tag-urgent','緊急'], event: ['tag-event','行事'] };
-  panel.innerHTML = notices.map(n => {
+
+  panel.innerHTML = filtered.map(n => {
+    const isRead = readSet.has(n.docId);
+    const flag   = flagMap[n.docId];
     const [cls, label] = tagMap[n.tag] || tagMap.info;
-    return `<div class="notice-item" onclick="openNotice(${n.id})">
-      <div class="notice-dot ${n.read ? 'dot-read' : 'dot-new'}"></div>
+    const flagHtml = flag
+      ? `<span class="flag-icon" style="color:${FLAG_COLORS[flag]};" onclick="event.stopPropagation();openFlag('${n.docId}')">🚩</span>`
+      : `<span class="flag-icon" style="opacity:0.2;" onclick="event.stopPropagation();openFlag('${n.docId}')">🚩</span>`;
+    const dateStr = n.createdAt ? new Date(n.createdAt.toDate()).toLocaleDateString('ja-JP') : n.date || '';
+    return `<div class="notice-item" onclick="openNotice('${n.docId}')">
+      <div class="notice-dot ${isRead ? 'dot-read' : 'dot-new'}"></div>
       <div class="notice-content">
-        <div class="notice-title${n.read ? ' read' : ''}">${n.title}</div>
-        <div class="notice-meta"><span>${n.date}</span></div>
+        <div class="notice-title${isRead ? ' read' : ''}">${esc(n.title)}</div>
+        <div class="notice-meta"><span>${dateStr}</span><span>${esc(n.poster||'')}</span></div>
       </div>
+      ${flagHtml}
       <span class="notice-tag ${cls}">${label}</span>
     </div>`;
   }).join('');
-  updateBadge();
 }
 
 function updateBadge() {
-  const cnt = notices.filter(n => !n.read).length;
+  const readSet = getReadSet();
+  const cnt = allNotices.filter(n => !readSet.has(n.docId)).length;
   const badge = document.getElementById('badge');
   badge.textContent = cnt;
   badge.style.display = cnt > 0 ? 'flex' : 'none';
 }
 
-function openNotice(id) {
-  const n = notices.find(x => x.id === id);
+window.openNotice = function(docId) {
+  const n = allNotices.find(x => x.docId === docId);
   if (!n) return;
-  n.read = true;
+  activeNoticeId = docId;
+
+  // 既読にする
+  const readSet = getReadSet();
+  readSet.add(docId);
+  saveRead(readSet);
+  renderNotices();
+  updateBadge();
+
+  const flagMap  = getFlagMap();
+  const flag     = flagMap[docId];
+  const dateStr  = n.createdAt ? new Date(n.createdAt.toDate()).toLocaleDateString('ja-JP') : n.date || '';
+  const tagNames = { info:'お知らせ', urgent:'緊急', event:'行事' };
+
   document.getElementById('modal-title').textContent = n.title;
-  document.getElementById('modal-body').innerHTML = `<p>${n.body}</p><div class="modal-meta">${n.date}　カテゴリ：${{ info:'お知らせ', urgent:'緊急', event:'行事' }[n.tag]}</div>`;
+  document.getElementById('modal-body').innerHTML =
+    `<p>${esc(n.body||'')}</p>
+     <div class="modal-meta">${dateStr}　カテゴリ：${tagNames[n.tag]||''}　投稿者：${esc(n.poster||'不明')}</div>`;
+
+  // アクションボタン
+  document.getElementById('modal-actions').innerHTML = `
+    <button class="notice-action-btn" onclick="markUnread('${docId}')">未読に戻す</button>
+    <button class="notice-action-btn" onclick="toggleFlagPicker()">🚩 フラグ</button>
+  `;
+
+  // フラグピッカー初期状態
+  const picker = document.getElementById('flag-picker');
+  picker.style.display = 'none';
+  document.querySelectorAll('.flag-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.flag === (flag||''));
+  });
+
   document.getElementById('notice-modal').classList.add('open');
+};
+
+window.closeNoticeModal = function() {
+  document.getElementById('notice-modal').classList.remove('open');
+  document.getElementById('flag-picker').style.display = 'none';
+  activeNoticeId = null;
+};
+
+window.markUnread = function(docId) {
+  const readSet = getReadSet();
+  readSet.delete(docId);
+  saveRead(readSet);
   renderNotices();
-}
+  updateBadge();
+  closeNoticeModal();
+};
 
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
+window.toggleFlagPicker = function() {
+  const p = document.getElementById('flag-picker');
+  p.style.display = p.style.display === 'none' ? 'flex' : 'none';
+};
 
-function toggleAddForm() {
-  const f = document.getElementById('add-form');
-  f.classList.toggle('open');
-}
+window.openFlag = function(docId) {
+  activeNoticeId = docId;
+  const flagMap = getFlagMap();
+  const flag = flagMap[docId] || '';
+  document.querySelectorAll('.flag-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.flag === flag);
+  });
+  const picker = document.getElementById('flag-picker');
+  picker.style.display = 'flex';
+  // モーダルを開く
+  openNotice(docId);
+};
 
-function postNotice() {
+window.setFlag = function(color) {
+  if (!activeNoticeId) return;
+  const flagMap = getFlagMap();
+  if (color) flagMap[activeNoticeId] = color;
+  else delete flagMap[activeNoticeId];
+  saveFlags(flagMap);
+  document.querySelectorAll('.flag-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.flag === color);
+  });
+  renderNotices();
+};
+
+window.setFilter = function(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderNotices();
+};
+
+window.markAllRead = function() {
+  const readSet = getReadSet();
+  allNotices.forEach(n => readSet.add(n.docId));
+  saveRead(readSet);
+  renderNotices();
+  updateBadge();
+};
+
+// ── 投稿確認ダイアログ ──
+window.confirmPost = function() {
   const title = document.getElementById('new-title').value.trim();
-  const body = document.getElementById('new-body').value.trim();
-  const tag = document.getElementById('new-tag').value;
+  const body  = document.getElementById('new-body').value.trim();
+  const tag   = document.getElementById('new-tag').value;
   if (!title) { alert('タイトルを入力してください'); return; }
-  const today = new Date().toISOString().slice(0,10);
-  notices.unshift({ id: nextNoticeId++, title, body: body || '（本文なし）', date: today, tag, read: false });
-  document.getElementById('new-title').value = '';
-  document.getElementById('new-body').value = '';
-  document.getElementById('add-form').classList.remove('open');
-  renderNotices();
-}
+  const tagNames = { info:'お知らせ', urgent:'緊急', event:'行事' };
+  document.getElementById('confirm-body').innerHTML =
+    `<strong>「${esc(title)}」</strong><br>カテゴリ：${tagNames[tag]}<br>${body ? `内容：${esc(body.slice(0,60))}${body.length>60?'…':''}` : ''}`;
+  document.getElementById('confirm-overlay').classList.add('open');
+};
 
-function markAllRead() {
-  notices.forEach(n => n.read = true);
-  renderNotices();
-}
+window.closeConfirm = function() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+};
 
-function scrollToNotices() {
+window.postNotice = async function() {
+  const title = document.getElementById('new-title').value.trim();
+  const body  = document.getElementById('new-body').value.trim();
+  const tag   = document.getElementById('new-tag').value;
+  if (!title) return;
+  try {
+    await addDoc(noticesCol, {
+      title,
+      body: body || '（本文なし）',
+      tag,
+      poster: '利用者',
+      createdAt: serverTimestamp(),
+    });
+    document.getElementById('new-title').value = '';
+    document.getElementById('new-body').value  = '';
+    document.getElementById('add-form').classList.remove('open');
+    document.getElementById('confirm-overlay').classList.remove('open');
+  } catch(e) {
+    alert('投稿に失敗しました。ネットワークを確認してください。');
+    console.error(e);
+  }
+};
+
+window.toggleAddForm = function() {
+  document.getElementById('add-form').classList.toggle('open');
+};
+
+window.scrollToNotices = function() {
   document.getElementById('notices-section').scrollIntoView({ behavior: 'smooth' });
-}
+};
 
-function openLinkManager() {
+// ── リンク管理 ──
+window.openLinkManager = function() {
   renderLinkList();
   document.getElementById('link-modal').classList.add('open');
-}
+};
+window.closeModal = function(id) {
+  document.getElementById(id).classList.remove('open');
+};
 
 function renderLinkList() {
   const el = document.getElementById('link-list');
@@ -522,38 +756,36 @@ function renderLinkList() {
     <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
       <span style="font-size:20px;">${l.icon}</span>
       <span style="flex:1;font-size:14px;font-weight:500;">${l.label}</span>
-      <button onclick="removeLink(${l.id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:18px;" title="削除">×</button>
+      <button onclick="removeLink(${l.id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:18px;">×</button>
     </div>`).join('');
 }
-
-function removeLink(id) {
+window.removeLink = function(id) {
   links = links.filter(l => l.id !== id);
-  renderLinkList();
-  renderQuickGrid();
-}
-
-function addLink() {
+  renderLinkList(); renderQuickGrid();
+};
+window.addLink = function() {
   const label = document.getElementById('new-link-label').value.trim();
-  const url = document.getElementById('new-link-url').value.trim();
-  const icon = document.getElementById('new-link-icon').value.trim() || '🔗';
+  const url   = document.getElementById('new-link-url').value.trim();
+  const icon  = document.getElementById('new-link-icon').value.trim() || '🔗';
   if (!label || !url) { alert('ラベルとURLを入力してください'); return; }
   const fullUrl = url.startsWith('http') ? url : 'https://' + url;
   links.push({ id: nextLinkId++, label, url: fullUrl, icon });
   document.getElementById('new-link-label').value = '';
-  document.getElementById('new-link-url').value = '';
-  document.getElementById('new-link-icon').value = '';
-  renderLinkList();
-  renderQuickGrid();
-}
+  document.getElementById('new-link-url').value   = '';
+  document.getElementById('new-link-icon').value  = '';
+  renderLinkList(); renderQuickGrid();
+};
 
-// 今日の日付
+// ── ユーティリティ ──
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── 日付表示 ──
 const d = new Date();
 const days = ['日','月','火','水','木','金','土'];
 document.getElementById('today-date').textContent =
   `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
 
 renderQuickGrid();
-renderNotices();
 </script>
 
 <!-- ▼ Service Worker登録 ここから -->
@@ -567,25 +799,5 @@ renderNotices();
   }
 </script>
 <!-- ▲ Service Worker登録 ここまで -->
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy } 
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  // ↓ここにコピーしたfirebaseConfigを貼る
-  const firebaseConfig = {
-  apiKey: "AIzaSyAjETeJffVrzn2KPE0SP4sEazeycWT1iGY",
-  authDomain: "school-portal-5a76c.firebaseapp.com",
-  projectId: "school-portal-5a76c",
-  storageBucket: "school-portal-5a76c.firebasestorage.app",
-  messagingSenderId: "769151131409",
-  appId: "1:769151131409:web:8609238bca82fb1938f6b0"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  // 以降の処理はConfigを受け取ってから実装します
-</script>
 </body>
 </html>
