@@ -35,7 +35,7 @@ header{
   background:rgba(255,255,255,0.15);border:none;border-radius:8px;
   color:#fff;font-size:18px;cursor:pointer;
   width:34px;height:34px;display:flex;align-items:center;justify-content:center;
-  transition:background 0.15s;
+  transition:background 0.15s; text-decoration:none;
 }
 .back-btn:hover{background:rgba(255,255,255,0.28);}
 .hd-title{font-size:17px;font-weight:700;}
@@ -214,7 +214,7 @@ header{
 
 <header>
   <div class="hd-left">
-    <button class="back-btn" onclick="history.back()">←</button>
+    <a href="./index.html" class="back-btn" title="ホームに戻る">🏠</a>
     <span class="hd-title">📅 時間割</span>
   </div>
   <button class="edit-toggle" id="edit-toggle" onclick="toggleEdit()">編集</button>
@@ -260,9 +260,56 @@ const PERIODS = [
   { num: 5, start: '16:30', end: '18:00' },
 ];
 
-const SUBJECT_COLORS = [
-  '#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#f97316'
+// ── localStorage キー定義（attendance.htmlと共通） ──
+const LS_SUBJECTS  = 'portal_subjects';
+const LS_TIMETABLE = 'portal_timetable';
+
+const DEFAULT_SUBJECTS = [
+  { id: 1, name: '線形代数学',          room: '大講義室A',   teacher: '山本 教授',   color: '#2563eb' },
+  { id: 2, name: '微分積分学',          room: '202教室',     teacher: '鈴木 准教授', color: '#10b981' },
+  { id: 3, name: '情報科学基礎',        room: '情報演習室1', teacher: '田中 助教',   color: '#8b5cf6' },
+  { id: 4, name: '英語コミュニケーション', room: '305教室',  teacher: 'Smith 講師',  color: '#f59e0b' },
 ];
+
+function buildEmptyTimetable() {
+  const tt = {};
+  for (let d = 0; d < 5; d++) {
+    tt[d] = {};
+    for (let p = 0; p < PERIODS.length; p++) {
+      tt[d][p] = { subjectId: null, color: 'blue' };
+    }
+  }
+  return tt;
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(LS_SUBJECTS);
+    subjects = raw ? JSON.parse(raw) : DEFAULT_SUBJECTS;
+  } catch(e) { subjects = DEFAULT_SUBJECTS; }
+  try {
+    const raw = localStorage.getItem(LS_TIMETABLE);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      timetable = buildEmptyTimetable();
+      // 保存データをマージ（キーが文字列になるのでNumber変換）
+      for (let d = 0; d < 5; d++) {
+        for (let p = 0; p < PERIODS.length; p++) {
+          if (saved[d] && saved[d][p]) timetable[d][p] = saved[d][p];
+        }
+      }
+    } else {
+      timetable = buildEmptyTimetable();
+    }
+  } catch(e) { timetable = buildEmptyTimetable(); }
+}
+
+function saveTimetable() {
+  localStorage.setItem(LS_TIMETABLE, JSON.stringify(timetable));
+}
+
+let subjects = [];
+let timetable = {};
 
 const CELL_COLORS = [
   { id: 'blue',   bg: '#dbeafe', label: '青' },
@@ -273,27 +320,12 @@ const CELL_COLORS = [
   { id: 'white',  bg: '#ffffff', label: '白' },
 ];
 
-// 科目マスタ（出欠管理と共通の想定）
-let subjects = [
-  { id: 1, name: '線形代数学',          room: '大講義室A',   teacher: '山本 教授',    color: '#2563eb' },
-  { id: 2, name: '微分積分学',          room: '202教室',     teacher: '鈴木 准教授',  color: '#10b981' },
-  { id: 3, name: '情報科学基礎',        room: '情報演習室1', teacher: '田中 助教',    color: '#8b5cf6' },
-  { id: 4, name: '英語コミュニケーション', room: '305教室',  teacher: 'Smith 講師',   color: '#f59e0b' },
-];
-
-// timetable[dayIndex][periodIndex] = { subjectId, color }
-let timetable = {};
-for (let d = 0; d < 5; d++) {
-  timetable[d] = {};
-  for (let p = 0; p < PERIODS.length; p++) {
-    timetable[d][p] = { subjectId: null, color: 'blue' };
-  }
-}
-
 let editMode = false;
-let editingCell = null; // { day, period }
+let editingCell = null;
 let tempSubjectId = null;
 let tempColor = 'blue';
+
+loadData();
 
 // 今日の曜日（0=月〜4=金, それ以外はnull）
 function todayDayIdx() {
@@ -414,6 +446,7 @@ function saveCell() {
   if (!editingCell) return;
   const { day, period } = editingCell;
   timetable[day][period] = { subjectId: tempSubjectId, color: tempColor };
+  saveTimetable();
   closeSheet();
   renderGrid();
   const subj = tempSubjectId ? subjects.find(s => s.id === tempSubjectId) : null;
