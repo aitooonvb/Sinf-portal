@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出欠管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --primary: #2563eb;
+  --primary-soft: #eff6ff;
+  --present: #10b981;
+  --present-soft: #ecfdf5;
+  --absent: #ef4444;
+  --absent-soft: #fef2f2;
+  --late: #f59e0b;
+  --late-soft: #fffbeb;
+  --early: #8b5cf6;
+  --early-soft: #f5f3ff;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --radius: 16px;
+  --shadow: 0 1px 8px rgba(0,0,0,0.07);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:var(--primary);color:#fff;padding:0 16px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(37,99,235,0.3);}
+.home-btn{background:rgba(255,255,255,0.15);border:none;border-radius:8px;color:#fff;font-size:18px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:background 0.15s;}
+.home-btn:hover{background:rgba(255,255,255,0.28);}
+.hd-center{font-family:'Outfit',sans-serif;font-size:17px;font-weight:700;}
+.hd-date{font-size:12px;opacity:0.85;}
+.tabs{display:flex;background:var(--surface);border-bottom:1.5px solid var(--border);position:sticky;top:54px;z-index:99;}
+.tab{flex:1;padding:12px 0;text-align:center;font-size:12px;font-weight:700;color:var(--text-muted);cursor:pointer;border-bottom:2.5px solid transparent;transition:all 0.2s;}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+main{max-width:640px;margin:0 auto;padding:20px 14px 80px;}
+.panel{display:none;}.panel.active{display:block;}
+.sec-title{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin:20px 0 10px 2px;}
+
+/* 入力タブ */
+.subject-list{display:flex;flex-direction:column;gap:8px;}
+.subject-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:13px 14px;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);}
+.subject-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-lg);}
+.subject-card.selected{border-color:var(--primary);background:var(--primary-soft);}
+.sub-bar{width:5px;height:44px;border-radius:3px;flex-shrink:0;}
+.sub-info{flex:1;}
+.sub-name{font-size:15px;font-weight:700;margin-bottom:2px;}
+.sub-meta{font-size:12px;color:var(--text-muted);}
+.sub-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.subject-card.selected .sub-check{background:var(--primary);border-color:var(--primary);}
+.subject-card.selected .sub-check::after{content:'';width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);display:block;}
+.today-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px;flex-shrink:0;}
+.tb-present{background:var(--present-soft);color:var(--present);}
+.tb-absent{background:var(--absent-soft);color:var(--absent);}
+.tb-late{background:var(--late-soft);color:var(--late);}
+.tb-early{background:var(--early-soft);color:var(--early);}
+.input-area{background:var(--surface);border-radius:var(--radius);border:1.5px solid var(--primary);padding:16px;margin-top:12px;box-shadow:var(--shadow);animation:fadeIn 0.2s ease;}
+.input-area-label{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:4px;}
+.input-area-name{font-size:17px;font-weight:700;margin-bottom:2px;}
+.input-area-meta{font-size:12px;color:var(--text-muted);margin-bottom:14px;}
+.change-notice{background:var(--late-soft);border:1.5px solid var(--late);border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:12px;color:#92400e;font-weight:600;}
+.att-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.att-btn{padding:16px 8px;border-radius:14px;border:1.5px solid var(--border);cursor:pointer;text-align:center;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;background:var(--surface);transition:all 0.18s;}
+.att-btn:active{transform:scale(0.96);}
+.att-btn .att-icon{font-size:26px;display:block;margin-bottom:5px;}
+.att-btn.present{border-color:var(--present);color:var(--present);background:var(--present-soft);}
+.att-btn.present:hover{background:var(--present);color:#fff;}
+.att-btn.absent{border-color:var(--absent);color:var(--absent);background:var(--absent-soft);}
+.att-btn.absent:hover{background:var(--absent);color:#fff;}
+.att-btn.late{border-color:var(--late);color:var(--late);background:var(--late-soft);}
+.att-btn.late:hover{background:var(--late);color:#fff;}
+.att-btn.early{border-color:var(--early);color:var(--early);background:var(--early-soft);}
+.att-btn.early:hover{background:var(--early);color:#fff;}
+.memo-input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);outline:none;transition:border-color 0.15s;}
+.memo-input:focus{border-color:var(--primary);}
+
+/* カレンダー */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.cal-month{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;}
+.cal-nav{background:none;border:1.5px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.cal-nav:hover{border-color:var(--primary);color:var(--primary);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:16px;}
+.cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--text-muted);padding:4px 0;}
+.cal-dow:first-child{color:#ef4444;}.cal-dow:last-child{color:#3b82f6;}
+.cal-day{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;gap:2px;}
+.cal-day:hover{background:var(--primary-soft);}
+.cal-day.other-month{color:#c8d3e8;}
+.cal-day.today-cell{background:var(--primary);color:#fff;font-weight:700;}
+.cal-dots{display:flex;gap:2px;justify-content:center;}
+.cal-dot{width:5px;height:5px;border-radius:50%;}
+.cal-detail{background:var(--surface);border-radius:var(--radius);border:1.5px solid var(--border);padding:16px;box-shadow:var(--shadow);}
+.cal-detail-date{font-size:15px;font-weight:700;margin-bottom:10px;color:var(--primary);}
+.cal-record-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.cal-record-item:last-child{border-bottom:none;}
+
+/* 集計 */
+.stats-total{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.stat-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:12px 8px;text-align:center;box-shadow:var(--shadow);}
+.stat-num{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;}
+.stat-num.c-present{color:var(--present);}.stat-num.c-absent{color:var(--absent);}.stat-num.c-late{color:var(--late);}.stat-num.c-early{color:var(--early);}
+.stat-label{font-size:11px;color:var(--text-muted);margin-top:3px;}
+.rate-card{background:var(--surface);border-radius:var(--radius);border:1.5px solid var(--border);padding:16px;box-shadow:var(--shadow);margin-bottom:16px;}
+.rate-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.rate-title{font-size:14px;font-weight:700;}
+.rate-pct{font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:var(--primary);}
+.rate-bar-bg{height:10px;background:var(--border);border-radius:5px;overflow:hidden;}
+.rate-bar{height:10px;border-radius:5px;transition:width 0.6s ease;}
+.rate-sub{font-size:12px;color:var(--text-muted);margin-top:6px;}
+.sub-stat-list{display:flex;flex-direction:column;gap:8px;}
+.sub-stat-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:13px 14px;box-shadow:var(--shadow);}
+.sub-stat-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.sub-stat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.sub-stat-name{font-size:14px;font-weight:700;flex:1;}
+.sub-stat-pct{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:var(--primary);}
+.sub-stat-counts{display:flex;gap:12px;font-size:12px;color:var(--text-muted);margin-bottom:6px;}
+.mini-bar-bg{height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.mini-bar{height:5px;border-radius:3px;transition:width 0.6s;}
+
+/* 設定 */
+.setting-card{background:var(--surface);border-radius:var(--radius);border:1.5px solid var(--border);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;}
+.setting-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.setting-title{font-size:15px;font-weight:700;}
+.add-btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s;}
+.add-btn:hover{background:#1d4ed8;}
+.form-wrap{border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;display:none;}
+.form-wrap.open{display:block;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.f-full{grid-column:1/-1;}
+.form-row label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px;}
+.form-row input{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);outline:none;transition:border-color 0.15s;}
+.form-row input:focus{border-color:var(--primary);}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;}
+.cancel-btn{background:none;border:1.5px solid var(--border);border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;color:var(--text-muted);}
+.sub-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);margin-bottom:6px;}
+.sub-item-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.sub-item-info{flex:1;}
+.sub-item-name{font-size:14px;font-weight:600;}
+.sub-item-meta{font-size:12px;color:var(--text-muted);}
+.sub-del{background:none;border:none;cursor:pointer;color:var(--border);font-size:16px;transition:color 0.15s;padding:0 2px;}
+.sub-del:hover{color:var(--absent);}
+.color-picker{display:flex;gap:8px;flex-wrap:wrap;padding:4px 0;}
+.color-opt{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all 0.15s;}
+.color-opt:hover{transform:scale(1.1);}
+.color-opt.selected{border-color:#0f172a;transform:scale(1.15);}
+
+/* 確認ダイアログ */
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.confirm-overlay.open{display:flex;}
+.confirm-box{background:var(--surface);border-radius:var(--radius);max-width:360px;width:100%;padding:24px;box-shadow:var(--shadow-lg);animation:slideUp 0.2s ease;}
+.confirm-icon{font-size:36px;text-align:center;margin-bottom:8px;}
+.confirm-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:8px;}
+.confirm-desc{font-size:14px;color:var(--text-muted);text-align:center;line-height:1.7;margin-bottom:20px;}
+.confirm-status{display:inline-block;padding:4px 14px;border-radius:100px;font-size:14px;font-weight:700;}
+.confirm-btns{display:flex;gap:10px;}
+.confirm-cancel{flex:1;padding:11px;border:1.5px solid var(--border);border-radius:10px;background:none;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600;}
+.confirm-ok{flex:2;padding:11px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-family:inherit;font-weight:700;color:#fff;background:var(--primary);transition:background 0.15s;}
+.confirm-ok:hover{background:#1d4ed8;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#fff;padding:11px 22px;border-radius:100px;font-size:14px;font-weight:600;z-index:999;transition:transform 0.3s,opacity 0.3s;opacity:0;pointer-events:none;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.empty{text-align:center;padding:36px 20px;color:var(--text-muted);font-size:14px;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="./index.html" class="home-btn" title="ホームに戻る">🏠</a>
+  <div class="hd-center">📋 出欠管理</div>
+  <div class="hd-date" id="hd-date"></div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('input',this)">入力</div>
+  <div class="tab" onclick="switchTab('calendar',this)">カレンダー</div>
+  <div class="tab" onclick="switchTab('stats',this)">集計</div>
+  <div class="tab" onclick="switchTab('settings',this)">設定</div>
+</div>
+
+<main>
+  <!-- 入力タブ -->
+  <div class="panel active" id="panel-input">
+    <div class="sec-title">科目を選択</div>
+    <div class="subject-list" id="subject-list"></div>
+    <div id="input-area"></div>
+  </div>
+
+  <!-- カレンダータブ -->
+  <div class="panel" id="panel-calendar">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calPrev()">‹</button>
+      <div class="cal-month" id="cal-month"></div>
+      <button class="cal-nav" onclick="calNext()">›</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div id="cal-detail"></div>
+  </div>
+
+  <!-- 集計タブ -->
+  <div class="panel" id="panel-stats">
+    <div class="sec-title">全教科総合</div>
+    <div class="stats-total" id="stats-total"></div>
+    <div id="stats-rate-all"></div>
+    <div class="sec-title">科目別</div>
+    <div class="sub-stat-list" id="sub-stat-list"></div>
+  </div>
+
+  <!-- 設定タブ -->
+  <div class="panel" id="panel-settings">
+    <div class="sec-title">科目の管理</div>
+    <div class="setting-card">
+      <div class="setting-header">
+        <div class="setting-title">科目一覧</div>
+        <button class="add-btn" onclick="toggleAddForm()">＋ 追加</button>
+      </div>
+      <div class="form-wrap" id="add-form">
+        <div class="form-grid">
+          <div class="form-row f-full"><label>科目名 *</label><input type="text" id="f-name" placeholder="例：線形代数学"></div>
+          <div class="form-row"><label>教室</label><input type="text" id="f-room" placeholder="例：101教室"></div>
+          <div class="form-row"><label>担当教員</label><input type="text" id="f-teacher" placeholder="例：山田 教授"></div>
+          <div class="form-row f-full"><label>曜日・時限</label><input type="text" id="f-time" placeholder="例：月曜 2限"></div>
+          <div class="form-row f-full"><label>カラー</label><div class="color-picker" id="color-picker"></div></div>
+        </div>
+        <div class="form-actions">
+          <button class="cancel-btn" onclick="toggleAddForm()">キャンセル</button>
+          <button class="add-btn" onclick="addSubject()">追加する</button>
+        </div>
+      </div>
+      <div id="sub-setting-list"></div>
+    </div>
+  </div>
+</main>
+
+<!-- 確認ダイアログ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon"></div>
+    <div class="confirm-title" id="confirm-title"></div>
+    <div class="confirm-desc" id="confirm-desc"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="closeConfirm()">キャンセル</button>
+      <button class="confirm-ok" id="confirm-ok-btn">記録する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LS_SUBJECTS='portal_subjects', LS_RECORDS='portal_records', LS_META='portal_meta';
+
+const SC={
+  present:{label:'出席', icon:'✅', cls:'present', color:'#10b981', soft:'#ecfdf5'},
+  absent: {label:'欠席', icon:'❌', cls:'absent',  color:'#ef4444', soft:'#fef2f2'},
+  late:   {label:'遅刻', icon:'⏰', cls:'late',    color:'#f59e0b', soft:'#fffbeb'},
+  early:  {label:'早退', icon:'🚶', cls:'early',   color:'#8b5cf6', soft:'#f5f3ff'},
+};
+
+const COLORS=['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#f97316','#14b8a6','#84cc16'];
+let selColor=COLORS[0];
+
+const DEF_SUBS=[
+  {id:1,name:'線形代数学',          room:'大講義室A',   teacher:'山本 教授',   time:'月曜 1限',color:'#2563eb'},
+  {id:2,name:'微分積分学',          room:'202教室',     teacher:'鈴木 准教授', time:'火曜 2限',color:'#10b981'},
+  {id:3,name:'情報科学基礎',        room:'情報演習室1', teacher:'田中 助教',   time:'水曜 3限',color:'#8b5cf6'},
+  {id:4,name:'英語コミュニケーション',room:'305教室',   teacher:'Smith 講師',  time:'木曜 4限',color:'#f59e0b'},
+];
+
+let subjects=[], records=[], nextSubId=10, nextRecId=1;
+
+function loadData(){
+  try{subjects=JSON.parse(localStorage.getItem(LS_SUBJECTS))||DEF_SUBS;}catch{subjects=DEF_SUBS;}
+  try{records=JSON.parse(localStorage.getItem(LS_RECORDS))||[];}catch{records=[];}
+  try{const m=JSON.parse(localStorage.getItem(LS_META)||'{}');nextSubId=m.nextSubId||10;nextRecId=m.nextRecId||1;}catch{}
+}
+function saveSubs(){localStorage.setItem(LS_SUBJECTS,JSON.stringify(subjects));saveMeta();}
+function saveRecs(){localStorage.setItem(LS_RECORDS,JSON.stringify(records));saveMeta();}
+function saveMeta(){localStorage.setItem(LS_META,JSON.stringify({nextSubId,nextRecId}));}
+loadData();
+
+function switchTab(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='calendar')renderCalendar();
+  if(tab==='stats')renderStats();
+  if(tab==='settings')renderSettings();
+}
+
+function todayStr(){const n=new Date();return `${n.getFullYear()}/${String(n.getMonth()+1).padStart(2,'0')}/${String(n.getDate()).padStart(2,'0')}`;}
+function getTodayRec(sid){return records.find(r=>r.subjectId===sid&&r.date===todayStr());}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+
+// ── 入力タブ ──
+let selSubId=null;
+
+function renderSubjectList(){
+  const el=document.getElementById('subject-list');
+  if(!subjects.length){el.innerHTML='<div class="empty">設定タブから科目を追加してください</div>';return;}
+  el.innerHTML=subjects.map(s=>{
+    const rec=getTodayRec(s.id);
+    const cfg=rec?SC[rec.status]:null;
+    const badge=cfg?`<span class="today-badge tb-${cfg.cls}">${cfg.label}済み</span>`:'';
+    return `<div class="subject-card${selSubId===s.id?' selected':''}" onclick="selectSub(${s.id})">
+      <div class="sub-bar" style="background:${s.color};"></div>
+      <div class="sub-info"><div class="sub-name">${esc(s.name)}</div><div class="sub-meta">${esc(s.room||'')}　${esc(s.teacher||'')}　${esc(s.time||'')}</div></div>
+      ${badge}
+      <div class="sub-check"></div>
+    </div>`;
+  }).join('');
+}
+
+function selectSub(id){
+  selSubId=selSubId===id?null:id;
+  renderSubjectList();
+  const area=document.getElementById('input-area');
+  if(!selSubId){area.innerHTML='';return;}
+  const s=subjects.find(x=>x.id===id);
+  const rec=getTodayRec(id);
+  const cfg=rec?SC[rec.status]:null;
+  const changeHtml=cfg?`<div class="change-notice">⚠️ 本日は「${cfg.label}」で記録済みです。変更する場合はボタンをタップしてください。</div>`:'';
+  area.innerHTML=`<div class="input-area">
+    <div class="input-area-label">${rec?'記録を変更':'出欠を入力'}</div>
+    <div class="input-area-name">${esc(s.name)}</div>
+    <div class="input-area-meta">${esc(s.room||'')}　${esc(s.teacher||'')}　${esc(s.time||'')}</div>
+    ${changeHtml}
+    <div class="att-grid">
+      <button class="att-btn present" onclick="confirmRec('present')"><span class="att-icon">✅</span>出席</button>
+      <button class="att-btn absent"  onclick="confirmRec('absent')"><span class="att-icon">❌</span>欠席</button>
+      <button class="att-btn late"    onclick="confirmRec('late')"><span class="att-icon">⏰</span>遅刻</button>
+      <button class="att-btn early"   onclick="confirmRec('early')"><span class="att-icon">🚶</span>早退</button>
+    </div>
+    <input class="memo-input" type="text" id="memo-input" placeholder="メモ（任意）" value="${esc(rec?.memo||'')}">
+  </div>`;
+}
+
+let pendingStatus=null;
+function confirmRec(status){
+  if(!selSubId)return;
+  pendingStatus=status;
+  const s=subjects.find(x=>x.id===selSubId);
+  const cfg=SC[status];
+  const memo=document.getElementById('memo-input')?.value.trim()||'';
+  const rec=getTodayRec(selSubId);
+  document.getElementById('confirm-icon').textContent=cfg.icon;
+  document.getElementById('confirm-title').textContent=rec?'記録を変更しますか？':'出欠を記録しますか？';
+  document.getElementById('confirm-desc').innerHTML=
+    `<strong>${esc(s.name)}</strong><br>`+
+    `<span class="confirm-status" style="background:${cfg.soft};color:${cfg.color};">${cfg.label}</span>`+
+    (memo?`<br><span style="font-size:12px;margin-top:4px;display:block;">メモ：${esc(memo)}</span>`:'');
+  document.getElementById('confirm-ok-btn').onclick=doRecord;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('open');pendingStatus=null;}
+
+function doRecord(){
+  if(!pendingStatus||!selSubId)return;
+  const s=subjects.find(x=>x.id===selSubId);
+  const memo=document.getElementById('memo-input')?.value.trim()||'';
+  const today=todayStr();
+  const now=new Date();
+  const time=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const idx=records.findIndex(r=>r.subjectId===s.id&&r.date===today);
+  const cfg=SC[pendingStatus];
+  if(idx!==-1){
+    records[idx]={...records[idx],status:pendingStatus,time,memo};
+    showToast(`${s.name}：${cfg.label}に変更しました`);
+  }else{
+    records.unshift({id:nextRecId++,subjectId:s.id,subjectName:s.name,status:pendingStatus,date:today,time,memo});
+    showToast(`${s.name}：${cfg.label}を記録しました`);
+  }
+  saveRecs();
+  closeConfirm();
+  selectSub(selSubId);
+  renderSubjectList();
+}
+
+// ── カレンダー ──
+let calY=new Date().getFullYear(), calM=new Date().getMonth();
+
+function renderCalendar(){
+  const today=new Date();
+  const first=new Date(calY,calM,1);
+  const last=new Date(calY,calM+1,0);
+  document.getElementById('cal-month').textContent=`${calY}年${calM+1}月`;
+  const dows=['日','月','火','水','木','金','土'];
+  let html=dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<first.getDay();i++)html+=`<div class="cal-day other-month"></div>`;
+  for(let d=1;d<=last.getDate();d++){
+    const ds=`${calY}/${String(calM+1).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
+    const dr=records.filter(r=>r.date===ds);
+    const isToday=d===today.getDate()&&calM===today.getMonth()&&calY===today.getFullYear();
+    const dots=dr.map(r=>`<div class="cal-dot" style="background:${SC[r.status]?.color||'#ccc'};"></div>`).join('');
+    html+=`<div class="cal-day${isToday?' today-cell':''}" onclick="showCalDetail('${ds}')"><span>${d}</span><div class="cal-dots">${dots}</div></div>`;
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+  document.getElementById('cal-detail').innerHTML='';
+}
+
+function showCalDetail(ds){
+  const dr=records.filter(r=>r.date===ds);
+  const el=document.getElementById('cal-detail');
+  if(!dr.length){el.innerHTML=`<div class="cal-detail"><div class="cal-detail-date">${ds}</div><div class="empty" style="padding:16px 0;">記録がありません</div></div>`;return;}
+  const items=dr.map(r=>{
+    const cfg=SC[r.status]||{};
+    return `<div class="cal-record-item">
+      <span class="today-badge tb-${cfg.cls||''}">${cfg.label||r.status}</span>
+      <div style="flex:1;"><div style="font-size:14px;font-weight:600;">${esc(r.subjectName)}</div>${r.memo?`<div style="font-size:12px;color:var(--text-muted);">${esc(r.memo)}</div>`:''}</div>
+      <span style="font-size:12px;color:var(--text-muted);">${r.time||''}</span>
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div class="cal-detail"><div class="cal-detail-date">${ds}</div>${items}</div>`;
+}
+function calPrev(){calM--;if(calM<0){calM=11;calY--;}renderCalendar();}
+function calNext(){calM++;if(calM>11){calM=0;calY++;}renderCalendar();}
+
+// ── 集計 ──
+function renderStats(){
+  const total=records.length;
+  const p=records.filter(r=>r.status==='present').length;
+  const a=records.filter(r=>r.status==='absent').length;
+  const l=records.filter(r=>r.status==='late').length;
+  const e=records.filter(r=>r.status==='early').length;
+  const rate=total>0?Math.round((p/total)*100):0;
+  document.getElementById('stats-total').innerHTML=`
+    <div class="stat-card"><div class="stat-num c-present">${p}</div><div class="stat-label">出席</div></div>
+    <div class="stat-card"><div class="stat-num c-absent">${a}</div><div class="stat-label">欠席</div></div>
+    <div class="stat-card"><div class="stat-num c-late">${l}</div><div class="stat-label">遅刻</div></div>
+    <div class="stat-card"><div class="stat-num c-early">${e}</div><div class="stat-label">早退</div></div>`;
+  document.getElementById('stats-rate-all').innerHTML=`
+    <div class="rate-card">
+      <div class="rate-row"><div class="rate-title">全教科 出席率</div><div class="rate-pct">${rate}%</div></div>
+      <div class="rate-bar-bg"><div class="rate-bar" style="width:${rate}%;background:var(--primary);"></div></div>
+      <div class="rate-sub">全${total}回中 出席${p}回</div>
+    </div>`;
+  const items=subjects.map(s=>{
+    const sr=records.filter(r=>r.subjectId===s.id);
+    if(!sr.length)return '';
+    const sp=sr.filter(r=>r.status==='present').length;
+    const sa=sr.filter(r=>r.status==='absent').length;
+    const sl=sr.filter(r=>r.status==='late').length;
+    const se=sr.filter(r=>r.status==='early').length;
+    const sr2=Math.round((sp/sr.length)*100);
+    return `<div class="sub-stat-card">
+      <div class="sub-stat-header"><div class="sub-stat-dot" style="background:${s.color};"></div><div class="sub-stat-name">${esc(s.name)}</div><div class="sub-stat-pct">${sr2}%</div></div>
+      <div class="sub-stat-counts"><span>✅ ${sp}</span><span>❌ ${sa}</span><span>⏰ ${sl}</span><span>🚶 ${se}</span><span style="margin-left:auto;">全${sr.length}回</span></div>
+      <div class="mini-bar-bg"><div class="mini-bar" style="width:${sr2}%;background:${s.color};"></div></div>
+    </div>`;
+  }).filter(Boolean).join('');
+  document.getElementById('sub-stat-list').innerHTML=items||'<div class="empty">記録がありません</div>';
+}
+
+// ── 設定 ──
+function renderSettings(){renderColorPicker();renderSubList();}
+function renderColorPicker(){
+  document.getElementById('color-picker').innerHTML=COLORS.map(c=>
+    `<div class="color-opt${c===selColor?' selected':''}" style="background:${c};" onclick="pickColor('${c}')"></div>`
+  ).join('');
+}
+function pickColor(c){selColor=c;renderColorPicker();}
+function toggleAddForm(){document.getElementById('add-form').classList.toggle('open');}
+function addSubject(){
+  const name=document.getElementById('f-name').value.trim();
+  const room=document.getElementById('f-room').value.trim();
+  const teacher=document.getElementById('f-teacher').value.trim();
+  const time=document.getElementById('f-time').value.trim();
+  if(!name){showToast('科目名を入力してください');return;}
+  subjects.push({id:nextSubId++,name,room:room||'未設定',teacher:teacher||'未設定',time:time||'未設定',color:selColor});
+  ['f-name','f-room','f-teacher','f-time'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('add-form').classList.remove('open');
+  saveSubs();renderSubList();renderSubjectList();
+  showToast(`「${name}」を追加しました`);
+}
+function deleteSub(id){
+  const s=subjects.find(x=>x.id===id);
+  subjects=subjects.filter(x=>x.id!==id);
+  if(selSubId===id){selSubId=null;document.getElementById('input-area').innerHTML='';}
+  saveSubs();renderSubList();renderSubjectList();
+  showToast(`「${s.name}」を削除しました`);
+}
+function renderSubList(){
+  const el=document.getElementById('sub-setting-list');
+  if(!subjects.length){el.innerHTML='<div class="empty">科目がありません</div>';return;}
+  el.innerHTML=subjects.map(s=>`
+    <div class="sub-item">
+      <div class="sub-item-dot" style="background:${s.color};"></div>
+      <div class="sub-item-info"><div class="sub-item-name">${esc(s.name)}</div><div class="sub-item-meta">${esc(s.room)}　${esc(s.teacher)}　${esc(s.time)}</div></div>
+      <button class="sub-del" onclick="deleteSub(${s.id})">×</button>
+    </div>`).join('');
+}
+
+// 初期化
+const nd=new Date();
+const dj=['日','月','火','水','木','金','土'];
+document.getElementById('hd-date').textContent=`${nd.getMonth()+1}/${nd.getDate()}（${dj[nd.getDay()]}）`;
+renderSubjectList();
+</script>
+</body>
+</html>
