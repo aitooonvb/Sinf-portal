@@ -236,6 +236,7 @@ main{max-width:640px;margin:0 auto;padding:20px 16px 80px;}
 
     <div class="record-section" id="record-section" style="display:none;">
       <div class="sec-title">出欠を入力</div>
+      <div id="change-notice-area"></div>
       <div class="selected-subject-info" id="selected-info"></div>
       <div class="att-buttons">
         <button class="att-btn present" onclick="record('present')">
@@ -387,13 +388,27 @@ function selectSubject(id) {
   const sec = document.getElementById('record-section');
   if (selectedSubjectId) {
     const s = subjects.find(x => x.id === id);
+    const todayRec = getTodayRecord(id);
+    const statusLabels = { present: '出席', absent: '欠席', late: '遅刻・早退' };
+
     document.getElementById('selected-info').innerHTML = `
-      <div class="selected-label">選択中の科目</div>
+      <div class="selected-label">${todayRec ? '記録を変更' : '選択中の科目'}</div>
       <div class="selected-name">${esc(s.name)}</div>
       <div class="selected-meta">${esc(s.room)}　${esc(s.teacher)}　${esc(s.time)}</div>`;
+
+    // 変更通知エリア更新
+    const changeEl = document.getElementById('change-notice-area');
+    changeEl.innerHTML = todayRec
+      ? `<div class="change-notice">⚠️ 本日は「${statusLabels[todayRec.status]}」で記録済みです。変更する場合は下のボタンをタップしてください。</div>`
+      : '';
+
+    // メモ欄に既存メモを表示
+    document.getElementById('memo-input').value = todayRec ? (todayRec.memo || '') : '';
+
     sec.style.display = 'block';
   } else {
     sec.style.display = 'none';
+    document.getElementById('change-notice-area').innerHTML = '';
   }
 }
 
