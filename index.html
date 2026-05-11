@@ -514,11 +514,11 @@ const COLORS = [
   { color: '#06b6d4', soft: '#cffafe' },
 ];
 let links = [
-  { id: 1, label: 'Moodle',          url: 'https://md.kumamoto-u.ac.jp/my/', icon: '📚' },
-  { id: 2, label: 'SOSEKI',          url: 'https://casoseki.kumamoto-u.ac.jp/campusweb/portal.do?page=main', icon: '🖥️' },
-  { id: 3, label: '教科書検索システム', url: 'https://www.kyushuba-univcoop.jp/textbook/kumamoto-u/', icon: '📖' },
-  { id: 4, label: '出欠管理',         url: './attendance.html', icon: '✅' },
-  { id: 5, label: '時間割',           url: './timetable.html',  icon: '📅' },
+  { id: 1, label: 'Moodle',          url: 'https://md.kumamoto-u.ac.jp/my/', icon: '📚', locked: true },
+  { id: 2, label: 'SOSEKI',          url: 'https://casoseki.kumamoto-u.ac.jp/campusweb/portal.do?page=main', icon: '🖥️', locked: true },
+  { id: 3, label: '教科書検索システム', url: 'https://www.kyushuba-univcoop.jp/textbook/kumamoto-u/', icon: '📖', locked: true },
+  { id: 4, label: '出欠管理',         url: './attendance.html', icon: '✅', locked: true },
+  { id: 5, label: '時間割',           url: './timetable.html',  icon: '📅', locked: true },
   { id: 6, label: 'メール',           url: 'https://mail.google.com', icon: '✉️' },
 ];
 let nextLinkId = 10;
@@ -756,10 +756,15 @@ function renderLinkList() {
     <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
       <span style="font-size:20px;">${l.icon}</span>
       <span style="flex:1;font-size:14px;font-weight:500;">${l.label}</span>
-      <button onclick="removeLink(${l.id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:18px;">×</button>
+      ${l.locked
+        ? `<span style="font-size:13px;color:var(--text-muted);padding:0 6px;" title="このリンクは削除できません">🔒</span>`
+        : `<button onclick="removeLink(${l.id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:18px;">×</button>`
+      }
     </div>`).join('');
 }
 window.removeLink = function(id) {
+  const link = links.find(l => l.id === id);
+  if (link && link.locked) return;
   links = links.filter(l => l.id !== id);
   renderLinkList(); renderQuickGrid();
 };
